@@ -1,0 +1,112 @@
+/**
+ * lib/api/types.ts — the backend contract (the single port interface).
+ * The frontend only knows these methods; the implementation swaps from mock
+ * (now) to the real backend later. Absence is expressed with `undefined` only
+ * (no `null`); any `null` from JSON/DB is converted at this boundary.
+ *
+ * The conversation language is `griefProfile.preferredLanguage` (chosen at
+ * onboarding) — the single source of truth the backend replies in. It is set
+ * once and travels inside the profile, so per-turn calls carry no locale.
+ */
+import type { Locale } from '@/i18n/config';
+
+export type GriefPath = 'afterLoss' | 'beforeLoss';
+export type LossType = 'sudden' | 'illness' | 'natural' | 'euthanasia' | 'unknown';
+/** For the beforeLoss path (pet still alive): the current situation. */
+export type SituationType = 'aging' | 'endOfLife' | 'ongoingCare' | 'other';
+/** Time-together bucket — a range is more useful for counseling than an exact number. */
+export type TogetherRange = '0-3' | '4-7' | '8-11' | '12+';
+
+export type SleepState = 'ok' | 'fair' | 'disturbed';
+export type EatingState = 'ok' | 'reduced';
+
+/** Worden's four grief tasks. 0 = onboarding, 5 = closing. */
+export type TaskId = 0 | 1 | 2 | 3 | 4 | 5;
+/** Support level; 3 routes to professional help. */
+export type SupportLevel = 1 | 2 | 3;
+
+export interface DailyState {
+  sleep?: SleepState;
+  eating?: EatingState;
+}
+
+/** Basic counseling info collected by onboarding and handed to the session. */
+export interface GriefProfile {
+  griefPath: GriefPath;
+  petName?: string;
+  togetherRange?: TogetherRange;
+  lossType?: LossType; // afterLoss path
+  situation?: SituationType; // beforeLoss path
+  weeksSinceLoss?: number;
+  dailyState?: DailyState;
+  /** Language the support conversation is conducted in (chosen at onboarding). */
+  preferredLanguage?: Locale;
+}
+
+/** Result of one turn — mirrors the backend SessionService.TurnResult. */
+export interface TurnResult {
+  reply: string;
+  task: TaskId;
+  taskLabel: string;
+  progress: number; // 0..1
+  supportLevel: SupportLevel;
+  done: boolean; // session ended (closed / safety hand-off)
+}
+
+/**
+ * One event of a streamed turn — mirrors the backend TurnEvent wire shape.
+ * `meta` (structure) arrives first, then `token`s carry the reply text, then
+ * `done` carries the assembled TurnResult.
+ */
+export interface MetaEvent {
+  kind: 'meta';
+  task: TaskId;
+  taskLabel: string;
+  progress: number;
+  supportLevel: SupportLevel;
+  done: boolean;
+}
+
+export interface TokenEvent {
+  kind: 'token';
+  text: string;
+}
+
+export interface DoneEvent {
+  kind: 'done';
+  result: TurnResult;
+}
+
+export type StreamEvent = MetaEvent | TokenEvent | DoneEvent;
+
+export interface StartRequest {
+  sessionId: string;
+  /** Present for a first-time (onboarding) session; omitted to continue from history. */
+  griefProfile?: GriefProfile;
+}
+
+/** One row of the returning user's session list (newest first). */
+export interface SessionListItem {
+  sessionId: string;
+  closed: boolean;
+  reachedTask: TaskId;
+  taskLabel: string;
+  progress: number;
+  petName?: string;
+  /** The session's conversation language — used to restore the returning user's UI locale. */
+  preferredLanguage: Locale;
+}
+
+/** The single data-layer abstraction. mock/real implement this interface.
+ * The reply language is carried by griefProfile.preferredLanguage (single source),
+ * so per-turn calls don't take a locale. */
+export interface Api {
+  start(request: StartRequest): Promise<TurnResult>;
+  sendMessage(sessionId: string, text: string): Promise<TurnResult>;
+  /** Streaming greeting — emits meta → tokens → done. */
+  startStream(request: StartRequest): AsyncIterable<StreamEvent>;
+  /** Streaming user turn — emits meta → tokens → done. */
+  sendMessageStream(sessionId: string, text: string): AsyncIterable<StreamEvent>;
+  /** The signed-in owner's sessions, newest first. */
+  listSessions(): Promise<SessionListItem[]>;
+}

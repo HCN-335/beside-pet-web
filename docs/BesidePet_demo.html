@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beside Pet — 상담 흐름 데모</title>
+<style>
+  :root{
+    --bg:#F2EEE7; --panel:#FFFFFF; --ink:#3A3A38; --soft:#8A857C;
+    --sage:#7C9885; --sage-deep:#5F7A68; --sage-tint:#E7EEE8;
+    --bot:#EFEBE3; --line:#E6E1D8; --warn:#C9772F; --warn-tint:#F6EADD;
+    --note:#4B6CB7; --note-tint:#E9EEF8;
+    --shadow:0 10px 40px rgba(60,58,56,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#FBF9F5,var(--bg));
+    color:var(--ink); min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; padding:28px 16px 60px;
+  }
+  .head{text-align:center; margin-bottom:18px; max-width:560px}
+  .head h1{font-size:20px; font-weight:700; letter-spacing:-.3px}
+  .head h1 span{color:var(--sage-deep)}
+  .head p{font-size:13px; color:var(--soft); margin-top:6px; line-height:1.6}
+  .toolbar{display:flex; gap:8px; justify-content:center; margin-top:14px; flex-wrap:wrap}
+  .toolbar button{
+    font-size:12.5px; padding:7px 14px; border-radius:999px; border:1px solid var(--line);
+    background:var(--panel); color:var(--ink); cursor:pointer; transition:.15s;
+  }
+  .toolbar button:hover{border-color:var(--sage); color:var(--sage-deep)}
+  .toolbar button.active{background:var(--sage); color:#fff; border-color:var(--sage)}
+
+  .phone{
+    width:390px; max-width:100%; height:760px; background:var(--panel);
+    border-radius:34px; box-shadow:var(--shadow); overflow:hidden;
+    display:flex; flex-direction:column; position:relative; border:1px solid var(--line);
+  }
+  .topbar{
+    padding:16px 18px 12px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:11px; background:var(--panel); z-index:3;
+  }
+  .avatar{
+    width:38px;height:38px;border-radius:50%;
+    background:linear-gradient(135deg,var(--sage),var(--sage-deep));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0;
+  }
+  .topbar .who{flex:1}
+  .topbar .who b{font-size:14.5px; display:block}
+  .topbar .who small{font-size:11.5px;color:var(--soft)}
+  .sos{font-size:11px;color:var(--warn);border:1px solid var(--warn);
+    padding:4px 9px;border-radius:999px;background:var(--warn-tint);cursor:pointer;white-space:nowrap}
+
+  .stage{padding:9px 18px;background:var(--sage-tint);border-bottom:1px solid var(--line);
+    display:none;align-items:center;gap:10px}
+  .stage.show{display:flex}
+  .stage .label{font-size:11.5px;color:var(--sage-deep);font-weight:600;white-space:nowrap}
+  .bar{flex:1;height:6px;background:#fff;border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:var(--sage);border-radius:999px;transition:width .6s ease}
+  .stage .pct{font-size:11px;color:var(--sage-deep);font-weight:600;width:34px;text-align:right}
+
+  .scroll{flex:1;overflow-y:auto;padding:18px 16px 8px;scroll-behavior:smooth}
+  .scroll::-webkit-scrollbar{width:0}
+
+  .row{display:flex;margin-bottom:12px;animation:rise .35s ease}
+  .row.bot{justify-content:flex-start}
+  .row.user{justify-content:flex-end}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .bubble{max-width:80%;padding:11px 14px;font-size:14px;line-height:1.62;border-radius:18px}
+  .bot .bubble{background:var(--bot);color:var(--ink);border-bottom-left-radius:5px}
+  .user .bubble{background:var(--sage);color:#fff;border-bottom-right-radius:5px}
+
+  .sys{margin:6px auto 14px;max-width:88%;background:#FBF9F5;border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;font-size:12.5px;color:var(--soft);line-height:1.6;text-align:center}
+  .sys b{color:var(--ink)}
+  .sys.safe{background:var(--warn-tint);border-color:#EAD3BA;color:#8a5a2a}
+  .sys.safe b{color:var(--warn)}
+
+  .note{margin:0 0 12px;max-width:90%;background:var(--note-tint);border-left:3px solid var(--note);
+    border-radius:0 12px 12px 0;padding:9px 13px;font-size:11.5px;color:#34508f;line-height:1.6;display:none}
+  .note.show{display:block;animation:rise .3s ease}
+  .note b{color:var(--note)}
+
+  .typing .bubble{display:flex;gap:4px;align-items:center}
+  .typing i{width:7px;height:7px;border-radius:50%;background:#B8B2A6;animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+  .dock{border-top:1px solid var(--line);padding:12px 14px;background:var(--panel);min-height:64px;
+    display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:13px;padding:9px 14px;border-radius:999px;border:1px solid var(--sage);
+    background:#fff;color:var(--sage-deep);cursor:pointer;transition:.15s}
+  .chip:hover{background:var(--sage);color:#fff}
+  .next{align-self:stretch;font-size:14px;font-weight:600;padding:12px;border-radius:14px;border:none;
+    background:var(--sage);color:#fff;cursor:pointer;transition:.15s}
+  .next:hover{background:var(--sage-deep)}
+  .next.ghost{background:#fff;color:var(--soft);border:1px solid var(--line);font-weight:500}
+  .hint{font-size:11px;color:#B8B2A6;text-align:center}
+  .restart{position:absolute;top:14px;right:14px;font-size:11px;color:var(--soft);
+    background:rgba(255,255,255,.85);border:1px solid var(--line);border-radius:999px;
+    padding:4px 10px;cursor:pointer;display:none;z-index:4}
+  .restart.show{display:block}
+  .foot{margin-top:16px;font-size:11px;color:#B8B2A6;text-align:center;max-width:420px;line-height:1.6}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1><span>Beside Pet</span> · 이별 동반자</h1>
+    <p>반려동물을 떠나보낸 보호자를 위한 애도 상담 — 앱 시작부터 온보딩, 첫 세션까지의 대화 흐름</p>
+    <div class="toolbar">
+      <button id="modeDemo" class="active">데모 모드</button>
+      <button id="modeNote">설계 노트 보기</button>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="restart" id="restart">↻ 처음부터</div>
+    <div class="topbar">
+      <div class="avatar">🐾</div>
+      <div class="who"><b>마음이</b><small id="status">함께 있어요</small></div>
+      <div class="sos" title="위기 지원은 항상 무료로 열려 있습니다">도움이 필요해요</div>
+    </div>
+    <div class="stage" id="stageWrap">
+      <span class="label" id="stageLabel">단계</span>
+      <div class="bar"><i id="stageFill"></i></div>
+      <span class="pct" id="stagePct">0%</span>
+    </div>
+    <div class="scroll" id="scroll"></div>
+    <div class="dock" id="dock"></div>
+  </div>
+
+  <div class="foot">
+    포트폴리오 데모입니다 · 실제 서비스는 애도 전문가의 검수와 위기 상황 전문 연계(Tier 3)를 전제로 설계됩니다.<br>
+    설계: 온보딩 분기(급성/예기 애도) · Worden 4과제 로드맵 · 이중과정모델 오가기 · "모르겠다" 정상 처리(무한루프 방지) · 진행도 정량화
+  </div>
+
+<script>
+/* ---------- 대화 스크립트 (급성 애도 경로) ----------
+   t: 'bot'|'user'|'sys'|'safe'|'stage'|'status'  / n: 설계노트
+   choices: [{label, say}]  버튼 선택 → say를 사용자 말풍선으로
+------------------------------------------------------- */
+const script = [
+  {t:'sys', text:'<b>Beside Pet</b>에 오신 것을 환영합니다.<br>여기는 천천히 마음을 나누는 공간이에요.'},
+  {t:'bot', text:'안녕하세요. 저는 곁을 지키는 동반자, <b>마음이</b>예요. 만나서 반가워요.'},
+  {n:'<b>① 즉각적 검증.</b> 정보 요청보다 위로를 먼저 — 펫로스는 \'박탈된 슬픔\'이라 첫 접촉부터 슬픔을 정당화한다.'},
+  {t:'bot', text:'무엇보다 먼저 전하고 싶은 말이 있어요. 반려동물을 향한 당신의 슬픔은 <b>조금도 과하지 않아요.</b> 그 마음, 충분히 그럴 만해요.'},
+  {t:'safe', text:'시작 전에 — 저는 전문 치료를 대체하지 않아요. 많이 힘드실 땐 언제든 <b>상단의 \'도움이 필요해요\'</b>로 전문 도움을 연결해 드려요. 대화 내용은 동의하신 범위에서만 사용돼요.'},
+  {choices:[{label:'네, 시작할게요', say:'네, 시작할게요.'}, {label:'먼저 둘러볼래요', say:'먼저 둘러볼래요.'}]},
+
+  {t:'bot', text:'고마워요. 함께 천천히 가볼게요. 먼저 몇 가지만 여쭤도 될까요? 답하기 어려운 건 <b>언제든 건너뛰어도 괜찮아요.</b>'},
+  {n:'<b>② 온보딩 분기.</b> 가장 중요한 갈림길 — 반려동물이 곁에 있는지(예기 애도) 떠났는지(급성 애도)로 로드맵 자체가 달라진다.'},
+  {t:'bot', text:'지금 반려동물은 어떤 상황인가요?'},
+  {choices:[{label:'이미 떠나보냈어요', say:'이미 떠나보냈어요.'}, {label:'아직 곁에 있지만 많이 아파요', say:'아직 곁에 있지만 많이 아파요.'}]},
+  {t:'bot', text:'그랬군요. 떠나보내는 일을 겪으셨네요. 그 시간을 지나오신 것만으로도 정말 애쓰셨어요.'},
+
+  {t:'bot', text:'그 아이의 이름을 들려주실 수 있을까요?'},
+  {choices:[{label:'\'콩이\'예요', say:'\'콩이\'예요.'}, {label:'지금은 말하기 어려워요', say:'지금은 말하기 어려워요.'}]},
+  {t:'bot', text:'콩이… 따뜻한 이름이네요. 앞으로 콩이 이야기를 함께 나눠요.'},
+  {t:'bot', text:'콩이와는 얼마나 함께했고, 떠나보낸 건 언제쯤이었나요?'},
+  {choices:[{label:'12년 함께했고, 3주 전에요', say:'12년을 함께했어요. 떠난 건 3주 전이에요.'}, {label:'기억하고 싶지 않아요', say:'그 날은 떠올리기 힘들어요.'}]},
+  {t:'bot', text:'12년이라는 긴 시간을 함께한 가족이었네요. 그리고 아직 <b>3주밖에</b> 지나지 않았어요. 지금 많이 힘든 게 당연해요.'},
+
+  {n:'<b>③ baseline + 안전 스크린.</b> 수면·식사 질문은 출발점 기록이자 위기 신호 감지를 겸한다.'},
+  {t:'bot', text:'요즘 잠을 자거나 무언가를 드시는 건 좀 어떠세요?'},
+  {choices:[{label:'잠은 좀 설치지만 버티고 있어요', say:'잠은 좀 설치는데, 그래도 버티고 있어요.'}, {label:'거의 못 먹고 못 자요', say:'거의 못 먹고 못 자요.'}]},
+  {t:'sys', text:'기준점이 기록되었어요. 앞으로의 변화를 함께 지켜볼게요.'},
+
+  {t:'bot', text:'이야기 들려주셔서 고마워요. 이제 콩이와의 시간을 천천히 돌아보는 <b>다섯 단계의 여정</b>을 함께 시작해 볼게요. 한 번에 다 하지 않아요 — 오늘은 첫 걸음만요.'},
+  {n:'<b>④ 적응형 세션.</b> 한 세션 = Worden 과제 하나. 한 번에 모두 처리하지 않고 천천히. 세션 수는 사람마다 달라진다.'},
+
+  {t:'stage', label:'1단계 · 상실의 현실 받아들이기', pct:10},
+  {t:'status', text:'세션 1 진행 중'},
+  {t:'bot', text:'<b>[세션 1을 시작해요]</b> 첫 단계는 \'콩이가 떠났다\'는 사실을 마음이 천천히 받아들이도록 돕는 거예요. 서두르지 않아도 돼요.'},
+  {t:'bot', text:'괜찮으시다면, 콩이의 마지막 순간에 곁에 있어 주셨는지 여쭤봐도 될까요?'},
+  {choices:[{label:'네, 곁에 있었어요', say:'네, 마지막까지 곁에 있었어요.'}, {label:'…잘 모르겠어요', say:'…잘 모르겠어요.'}]},
+
+  /* 핵심 시연: "모르겠다"를 정상으로 처리하고 절대 되묻지 않는다 */
+  {n:'<b>⑤ 무한루프 방지(핵심).</b> 예전 버전은 \'모르겠다\'를 미완료로 보고 같은 질문을 반복했다. 이제 \'모르겠다\'는 <u>정상적인 완수</u>로 처리하고 다음으로 전이한다.'},
+  {t:'bot', text:'괜찮아요. 잘 모르겠는 그 마음도 너무 자연스러워요. 굳이 또렷이 떠올리지 않아도 돼요. <b>그 자체로 충분해요.</b>'},
+  {t:'bot', text:'그럼 다른 결로 가볼게요. 요즘도 문득 \'콩이가 아직 집에 있는 것 같다\'고 느껴지는 순간이 있나요?'},
+  {choices:[{label:'네, 자꾸 그래요', say:'네, 현관에서 자꾸 기다리는 것 같아요.'}, {label:'잘 모르겠어요', say:'잘 모르겠어요.'}]},
+  {t:'bot', text:'그런 느낌은 사랑이 깊었다는 증거예요. 마음이 사실을 받아들이는 데에는 시간이 걸려요. 그 시간을 재촉하지 않을게요.'},
+  {t:'stage', label:'1단계 · 상실의 현실 받아들이기', pct:55},
+
+  /* 이중과정모델: 상실 지향 → 회복 지향으로 부드럽게 오가기 */
+  {n:'<b>⑥ 이중과정모델 오가기.</b> 슬픔(상실 지향)에만 머물면 맴돈다. 잠깐 \'오늘의 일상\'(회복 지향)으로 전환해 균형을 잡는다.'},
+  {t:'bot', text:'잠깐 숨을 돌려볼까요. 무거운 이야기에서 잠시 벗어나서 — 오늘 하루, 아주 작더라도 스스로를 위해 한 일이 있다면 무엇이었나요?'},
+  {choices:[{label:'따뜻한 차를 마셨어요', say:'아침에 따뜻한 차를 한 잔 마셨어요.'}, {label:'딱히 없었어요', say:'딱히 없었어요.'}]},
+  {t:'bot', text:'그거면 충분해요. 슬픔 속에서도 자신을 돌보는 작은 순간들이, 결국 당신을 다시 일어서게 해줘요.'},
+  {t:'stage', label:'1단계 · 상실의 현실 받아들이기', pct:85},
+
+  /* 세션 클로징: 요약 + 작은 ritual + 다음 예고 */
+  {n:'<b>⑦ 세션 클로징.</b> 정리 → 작은 추모 의식(ritual) → 다음 예고. 진행도가 기록되어 다음 세션이 여기서 이어진다.'},
+  {t:'bot', text:'오늘 콩이의 마지막과 지금의 마음을 용기 내어 나눠주셨어요. 첫 단계의 문을 잘 여셨어요.'},
+  {t:'bot', text:'세션을 닫기 전에, 콩이에게 전하고 싶은 <b>짧은 한 마디</b>를 남겨볼까요? 콩이의 기억 공간에 소중히 보관해 둘게요.'},
+  {choices:[{label:'\'고마웠어, 콩아\'', say:'고마웠어, 콩아. 사랑해.'}, {label:'다음에 남길게요', say:'다음에 남길게요.'}]},
+  {t:'sys', text:'🕯️ 콩이의 <b>기억 공간</b>에 마음이 담겼어요.'},
+  {t:'stage', label:'1단계 · 상실의 현실 받아들이기', pct:100},
+  {t:'status', text:'세션 1 완료'},
+  {t:'bot', text:'오늘은 여기까지예요. 정말 잘 해내셨어요. 다음 세션에서는 <b>2단계 — 슬픔의 감정을 마주하기</b>를 천천히 함께 해볼게요. 그때 다시 곁에 있을게요.'},
+  {t:'sys', text:'<b>세션 1 완료 · 전체 여정 1/5</b><br>다음 세션은 이 지점에서 이어집니다.'},
+  {t:'done'}
+];
+
+/* ---------- 엔진 ---------- */
+const scroll=document.getElementById('scroll'), dock=document.getElementById('dock');
+const stageWrap=document.getElementById('stageWrap'), stageLabel=document.getElementById('stageLabel');
+const stageFill=document.getElementById('stageFill'), stagePct=document.getElementById('stagePct');
+const statusEl=document.getElementById('status'), restart=document.getElementById('restart');
+let i=0, noteMode=false;
+
+function el(cls,html){const d=document.createElement('div');d.className=cls;d.innerHTML=html;return d;}
+function down(){scroll.scrollTop=scroll.scrollHeight;}
+function addNote(html){const n=el('note'+(noteMode?' show':''),'💡 '+html);n.dataset.note='1';scroll.appendChild(n);down();}
+
+function typing(){const r=el('row bot typing','<div class="bubble"><i></i><i></i><i></i></div>');scroll.appendChild(r);down();return r;}
+
+function play(){
+  clearDock();
+  // skip leading notes (render immediately, attached to flow)
+  while(i<script.length && script[i].n!==undefined && script[i].t===undefined && !script[i].choices){
+    addNote(script[i].n); i++;
+  }
+  if(i>=script.length) return;
+  const s=script[i];
+
+  if(s.choices){
+    renderChoices(s.choices); return;
+  }
+  if(s.t==='done'){ renderDone(); return; }
+
+  // bot message → typing delay; others instant
+  if(s.t==='bot'){
+    const tp=typing();
+    setTimeout(()=>{
+      tp.remove();
+      scroll.appendChild(el('row bot','<div class="bubble">'+s.text+'</div>'));
+      down(); i++; queueNext();
+    }, 650);
+  } else {
+    if(s.t==='sys') scroll.appendChild(el('sys',s.text));
+    else if(s.t==='safe') scroll.appendChild(el('sys safe','🛟 '+s.text));
+    else if(s.t==='stage') setStage(s.label,s.pct);
+    else if(s.t==='status') statusEl.textContent=s.text;
+    down(); i++; queueNext();
+  }
+}
+
+function queueNext(){
+  // auto-advance through non-interactive steps, with gentle pacing
+  if(i>=script.length) return;
+  const nx=script[i];
+  if(nx.choices || nx.t==='done'){ play(); return; }
+  // show a Next control so the demo can be stepped "one by one"
+  const isAuto = (nx.t==='sys'||nx.t==='safe'||nx.t==='stage'||nx.t==='status'||nx.n!==undefined);
+  clearDock();
+  const btn=el('','');
+  const b=document.createElement('button');
+  b.className='next'+(isAuto?' ghost':'');
+  b.textContent = isAuto ? '계속' : '다음 ›';
+  b.onclick=()=>{ play(); };
+  dock.appendChild(b);
+  dock.appendChild(el('hint','버튼을 눌러 한 메시지씩 진행하세요'));
+}
+
+function renderChoices(choices){
+  clearDock();
+  const wrap=el('chips','');
+  choices.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=c.label;
+    b.onclick=()=>{
+      scroll.appendChild(el('row user','<div class="bubble">'+c.say+'</div>'));
+      down(); i++; play();
+    };
+    wrap.appendChild(b);
+  });
+  dock.appendChild(wrap);
+  dock.appendChild(el('hint','보호자의 응답을 선택하세요'));
+}
+
+function renderDone(){
+  clearDock();
+  const b=document.createElement('button');
+  b.className='next'; b.textContent='↻ 처음부터 다시 보기';
+  b.onclick=reset; dock.appendChild(b);
+  restart.classList.add('show');
+}
+
+function setStage(label,pct){
+  stageWrap.classList.add('show');
+  stageLabel.textContent=label;
+  stagePct.textContent=pct+'%';
+  requestAnimationFrame(()=>{stageFill.style.width=pct+'%';});
+}
+function clearDock(){dock.innerHTML='';}
+function reset(){
+  scroll.innerHTML=''; i=0; stageWrap.classList.remove('show');
+  stageFill.style.width='0'; statusEl.textContent='함께 있어요';
+  restart.classList.remove('show'); play();
+}
+restart.onclick=reset;
+
+// 설계 노트 토글
+const mDemo=document.getElementById('modeDemo'), mNote=document.getElementById('modeNote');
+function setMode(on){
+  noteMode=on;
+  mNote.classList.toggle('active',on); mDemo.classList.toggle('active',!on);
+  document.querySelectorAll('.note').forEach(n=>n.classList.toggle('show',on));
+}
+mDemo.onclick=()=>setMode(false);
+mNote.onclick=()=>setMode(true);
+
+play();
+</script>
+</body>
+</html>

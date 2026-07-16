@@ -1,0 +1,73 @@
+/**
+ * i18n/messages.ts — the message-catalog shape.
+ * Every locale catalog must satisfy `Messages`, so a missing or extra key
+ * is a build error. Entries that need runtime values are functions.
+ */
+import type { GriefPath, LossType, SituationType, SleepState, TogetherRange } from '@/lib/api';
+
+export interface Messages {
+  landing: {
+    title: string;
+    subtitleLine1: string;
+    subtitleLine2: string;
+    start: string;
+  };
+  auth: {
+    title: string;
+    subtitle: string;
+    username: string;
+    password: string;
+    submit: string;
+    signingIn: string;
+    logout: string;
+    setupTitle: string;
+    setupSubtitle: string;
+    setupToken: string;
+    setupTokenHint: string;
+    setupSubmit: string;
+    settingUp: string;
+  };
+  chat: {
+    placeholder: string;
+    send: string;
+    skip: string;
+  };
+  onboarding: {
+    askName: string;
+    askLanguage: string;
+    askDuration: (petName: string) => string;
+    askLoss: (petName: string) => string;
+    askSituation: (petName: string) => string;
+    askPath: (petName: string) => string;
+    askSleep: string;
+    closing: string;
+    placeholderName: string;
+    begin: string;
+    defaultPetName: string;
+    duration: Record<TogetherRange, string>;
+    loss: Record<LossType, string>;
+    situation: Record<SituationType, string>;
+    path: Record<GriefPath, string>;
+    sleep: Record<SleepState, string>;
+  };
+  session: {
+    noSession: string;
+    toHome: string;
+    closed: string;
+    progressFallback: string;
+  };
+  sessionList: {
+    title: string;
+    subtitle: string;
+    continueButton: string;
+    newButton: string;
+    ongoing: string;
+    done: string;
+    loading: string;
+  };
+  safety: {
+    title: string;
+    body: string;
+    hotlineNumber: string;
+  };
+}

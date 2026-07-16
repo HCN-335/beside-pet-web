@@ -1,0 +1,69 @@
+# Beside Pet — Frontend
+
+펫로스 정서 지지 에이전트의 **웹 클라이언트** (Next.js App Router + React).
+대화 흐름 판단은 전부 백엔드(beside-pet-api)에 있고, 프론트는 화면·입력·진행도 표시만 담당하는 **얇은 클라이언트**다.
+
+---
+
+## 역할 (그리고 하지 않는 일)
+
+| 한다 | 하지 않는다 |
+|------|-------------|
+| 채팅 UI 렌더링, 입력 전송, SSE 수신 | 대화 흐름 판단 ❌ |
+| 진행도(단계·진행률) 표시 | 다음 질문 결정 ❌ |
+| 세션 시작/이어가기, 온보딩 수집 | LLM 직접 호출 ❌ |
+| 위기 자원 안내 표시 | **API 키 보관 ❌ (절대)** |
+
+대화의 단일 진실은 백엔드 세션 상태다. 프론트는 응답(`TurnResult`)을 표시할 뿐 자체 대화 상태를 만들지 않는다.
+
+## 화면 흐름
+
+```
+[로그인/최초 설정] → 역할 분기
+   ├ admin  → [계정 관리]
+   └ viewer → [온보딩(스크립트 인테이크)] → [세션(채팅+진행도)] → [클로저] → (다음 세션)
+                                                └ 위기 시: 안전 자원 안내
+```
+
+- **온보딩**은 LLM 없이 결정론적 스크립트 대화로 프로필(이름·함께한 기간·이별 경로 등)을 수집해 세션 시드로 넘긴다.
+- **최초 설정**: 백엔드에 관리자가 없으면 로그인 대신 설정 폼이 뜬다(부팅 로그의 1회용 토큰 사용).
+
+## 아키텍처 — Feature-Sliced
+
+기능 우선 수직 슬라이스, 레이어는 얇게. 추상화(포트)는 API 경계 한 곳에만 둔다.
+
+```
+frontend/
+├─ app/                  # 라우트는 조립만 (/, /onboarding, /session, /sessions, /admin)
+├─ features/             # auth · onboarding · session · safety · admin
+│  └─ <feature>/{components, *.store.ts, *.types.ts}
+├─ components/chat/      # 온보딩·세션 공용 채팅 UI (말풍선·리스트·컴포저)
+├─ lib/
+│  ├─ api/               # 유일한 백엔드 포트 (mock ↔ http 스위칭)
+│  ├─ data/              # 읽기 게이트웨이 (UI는 여기만 호출)
+│  ├─ cache/             # 타입드 TTL 캐시 팩토리
+│  └─ stream/            # SSE 수신
+└─ i18n/                 # ko/en 카탈로그 + 쿠키 로케일
+```
+
+**상태 규칙**: feature당 Zustand store 1개, use case 1개 = store action 1개. 컴포넌트는 표현만, selector로 구독.
+
+## 백엔드 연동
+
+`lib/api`가 유일한 창구 — 환경변수로 mock ↔ 실서버를 스위칭하므로 백엔드 없이도 전체 플로우가 돈다.
+
+```bash
+pnpm install
+pnpm dev                          # mock 모드 — 백엔드 없이 동작
+# .env.local: NEXT_PUBLIC_USE_BACKEND=1 → beside-pet-api 실연동 (JWT httpOnly 쿠키)
+```
+
+## 톤·접근성 (제품 제약)
+
+- **"정서적 지지" 워딩** — 치료·진단 표현을 쓰지 않는다.
+- 위기 자원 안내는 **항상 노출·무료** — 어떤 흐름 뒤에도 숨기지 않는다.
+- 차분한 색·모션. 강한 알림/게이미피케이션 지양.
+
+## 스택
+
+Next.js(App Router) · React · TypeScript(strict) · Tailwind v4 · Zustand · Biome · pnpm
