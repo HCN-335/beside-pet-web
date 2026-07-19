@@ -37,7 +37,14 @@ export default function SessionPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b border-black/5 bg-background/95 px-4 py-3 backdrop-blur">
-        <ProgressBar taskLabel={taskLabel} progress={progress} />
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <ProgressBar taskLabel={taskLabel} progress={progress} />
+          </div>
+          <Link href="/settings" className="shrink-0 text-xs text-muted underline">
+            {translations.settings.title}
+          </Link>
+        </div>
       </header>
 
       <MessageList messages={messages} />

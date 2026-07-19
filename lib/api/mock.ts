@@ -7,16 +7,21 @@
  * The reply strings are *content* standing in for the backend/LLM (not UI copy).
  * The conversation language is the profile's preferredLanguage (chosen at
  * onboarding, default English), so the mock replies in that language — mirroring
- * the real backend. Decision rules and copy mirror the backend stub
- * (TaskProgressionService + ClaudeAdapter). Engagement/crisis detection
- * (DUNNO/RISK) is bilingual (ko + en), matching the backend's shared patterns.
+ * the real backend. Decision rules mirror the backend's deterministic domain
+ * (TaskProgressionService); the reply copy is the mock's own stand-in for the
+ * live model. Engagement/crisis detection (DUNNO/RISK) is bilingual (ko + en),
+ * matching the backend's shared patterns.
  */
 import type { Locale } from '@/i18n/config';
 import { DEFAULT_LOCALE } from '@/i18n/config';
 import type {
   Api,
   GriefProfile,
+  HistoryMessage,
+  MindReport,
+  ReportSectionKey,
   SessionListItem,
+  SessionStateView,
   StartRequest,
   StreamEvent,
   SupportLevel,
@@ -24,7 +29,7 @@ import type {
   TurnResult,
 } from './types';
 
-/** Time-to-first-token the mock waits before streaming — matches the backend stub. */
+/** Time-to-first-token the mock waits before streaming, mimicking a live model. */
 const STREAM_TTFT_MS = 500;
 /** Fixed gap between subsequent chunks. */
 const STREAM_TOKEN_GAP_MS = 35;
@@ -90,8 +95,20 @@ interface MockSession {
   disengageStreak: number;
   petName: string;
   language: Locale;
+  closed: boolean;
+  supportLevel: SupportLevel;
+  history: HistoryMessage[];
 }
 const sessions = new Map<string, MockSession>();
+
+/** Deterministic transcript timestamps: a fixed base advanced one minute per message. */
+let messageSeq = 0;
+const BASE_TIME_MS = Date.UTC(2026, 0, 1);
+const nextTimestamp = (): string => new Date(BASE_TIME_MS + messageSeq++ * 60_000).toISOString();
+
+const record = (session: MockSession, role: 'assistant' | 'user', text: string): void => {
+  session.history.push({ role, text, task: session.task, at: nextTimestamp() });
+};
 
 /** Last profile seen — lets "continue" (start with no profile) reuse it in the mock. */
 let lastGriefProfile: GriefProfile | undefined;
@@ -102,6 +119,8 @@ type Line = (pet: string) => string;
 
 interface LineSet {
   intro: Line;
+  /** Welcome-back greeting for a resumed journey (new session, inherited stage). */
+  resume: (task: TaskId, pet: string) => string;
   open: Record<number, Line>;
   /** Deeper follow-ups per stage (example-guided), indexed by how deep we already are. */
   deepen: Record<number, Line[]>;
@@ -114,6 +133,8 @@ interface LineSet {
 const LINES: Record<Locale, LineSet> = {
   ko: {
     intro: (pet) => `${pet} 이야기를 천천히 함께 나눠볼게요. ${(LINES.ko.open[1] as Line)(pet)}`,
+    resume: (task, pet) =>
+      `다시 와주셨네요. 지난 이야기에 이어서 천천히 함께해요. ${openLine(LINES.ko, task, pet)}`,
     open: {
       1: (pet) =>
         `${pet} 이야기를 들려주실 수 있을까요? 어떻게 헤어지게 되었는지, 편하신 만큼만요. (예: "지난달에 신장병으로 떠났어요"처럼요)`,
@@ -165,6 +186,8 @@ const LINES: Record<Locale, LineSet> = {
   },
   en: {
     intro: (pet) => `Let's gently talk through ${pet} together. ${(LINES.en.open[1] as Line)(pet)}`,
+    resume: (task, pet) =>
+      `Welcome back. Let's gently pick up where we left off. ${openLine(LINES.en, task, pet)}`,
     open: {
       1: (pet) =>
         `Could you tell me about ${pet}? How you parted — only as much as feels okay. (e.g., "she passed last month from kidney disease")`,
@@ -230,24 +253,37 @@ const deepenLine = (lines: LineSet, task: TaskId, pet: string, depth: number): s
 
 export const mockApi: Api = {
   async start(request: StartRequest): Promise<TurnResult> {
-    // First-time onboarding sends a profile; "continue" omits it → reuse the last one.
+    // First-time onboarding sends a profile; omitting it resumes the journey
+    // from the most recent session (inherited profile + reached stage).
+    const prior = [...sessions.values()].pop();
+    const resuming = !request.griefProfile && prior !== undefined;
     const griefProfile = request.griefProfile ?? lastGriefProfile ?? { griefPath: 'afterLoss' };
     lastGriefProfile = griefProfile;
-    const language = griefProfile.preferredLanguage ?? DEFAULT_PREFERRED_LANGUAGE;
+    const language = resuming
+      ? prior.language
+      : (griefProfile.preferredLanguage ?? DEFAULT_PREFERRED_LANGUAGE);
     const lines = LINES[language] ?? LINES[DEFAULT_LOCALE];
-    const petName = griefProfile.petName ?? lines.defaultPetName;
-    sessions.set(request.sessionId, {
-      task: 1,
+    const petName = resuming ? prior.petName : (griefProfile.petName ?? lines.defaultPetName);
+    // A completed arc starts a fresh pass; otherwise resume at the reached stage.
+    const task: TaskId = resuming && prior.task < 5 ? prior.task : 1;
+    const session: MockSession = {
+      task,
       turnsInStage: 0,
       disengageStreak: 0,
       petName,
       language,
-    });
+      closed: false,
+      supportLevel: SUPPORT_LEVEL_SAFE,
+      history: [],
+    };
+    sessions.set(request.sessionId, session);
+    const reply = resuming ? lines.resume(task, petName) : lines.intro(petName);
+    record(session, 'assistant', reply);
     return {
-      reply: lines.intro(petName),
-      task: 1,
-      taskLabel: TASK_LABELS[1],
-      progress: progressOf(1),
+      reply,
+      task,
+      taskLabel: TASK_LABELS[task],
+      progress: progressOf(task),
       supportLevel: SUPPORT_LEVEL_SAFE,
       done: false,
     };
@@ -258,10 +294,17 @@ export const mockApi: Api = {
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
     }
+    if (session.closed) {
+      throw new Error('Session is already closed.');
+    }
     const lines = LINES[session.language] ?? LINES[DEFAULT_LOCALE];
+    record(session, 'user', text);
 
     // Safety first: a crisis signal routes to professional help, then closes.
     if (RISK.test(text)) {
+      session.closed = true;
+      session.supportLevel = SUPPORT_LEVEL_CRISIS;
+      record(session, 'assistant', lines.crisis);
       return {
         reply: lines.crisis,
         task: session.task,
@@ -289,7 +332,8 @@ export const mockApi: Api = {
 
     // Finishing task 4 (task becomes 5) closes the session.
     if (session.task >= 5) {
-      sessions.delete(sessionId);
+      session.closed = true;
+      record(session, 'assistant', lines.closing);
       return {
         reply: lines.closing,
         task: 5,
@@ -306,6 +350,7 @@ export const mockApi: Api = {
       : engaged
         ? deepenLine(lines, session.task, session.petName, session.turnsInStage)
         : lines.retry(session.petName);
+    record(session, 'assistant', reply);
 
     return {
       reply,
@@ -325,17 +370,107 @@ export const mockApi: Api = {
     yield* streamTurn(await this.sendMessage(sessionId, text));
   },
 
-  // The mock deletes sessions on close, so this lists only live (unclosed) ones —
-  // the real backend lists the full history.
   async listSessions(): Promise<SessionListItem[]> {
     return [...sessions.entries()].reverse().map(([sessionId, session]) => ({
       sessionId,
-      closed: false,
+      closed: session.closed,
       reachedTask: session.task,
       taskLabel: TASK_LABELS[session.task],
       progress: progressOf(session.task),
       petName: session.petName,
       preferredLanguage: session.language,
+      reportAvailable: reportAvailable(session),
     }));
   },
+
+  async getSessionState(sessionId: string): Promise<SessionStateView> {
+    return stateOf(sessionId, requireSession(sessionId));
+  },
+
+  async getMessages(sessionId: string): Promise<HistoryMessage[]> {
+    return [...requireSession(sessionId).history];
+  },
+
+  async getReport(sessionId: string): Promise<MindReport> {
+    const session = requireSession(sessionId);
+    if (!reportAvailable(session)) {
+      throw new Error('The report is not available for this session yet.');
+    }
+    const titles = REPORT_TITLES[session.language] ?? REPORT_TITLES[DEFAULT_LOCALE];
+    const bodies = reportBodies(session);
+    return {
+      at: nextTimestamp(),
+      petName: session.petName,
+      reachedTask: session.task,
+      progress: progressOf(session.task),
+      locale: session.language,
+      sections: REPORT_ORDER.map((key) => ({ key, title: titles[key], body: bodies[key] })),
+    };
+  },
+
+  async closeSession(sessionId: string): Promise<SessionStateView> {
+    const session = requireSession(sessionId);
+    session.closed = true;
+    return stateOf(sessionId, session);
+  },
 };
+
+const requireSession = (sessionId: string): MockSession => {
+  const session = sessions.get(sessionId);
+  if (!session) {
+    throw new Error(`Session not found: ${sessionId}`);
+  }
+  return session;
+};
+
+/** Mirrors the backend rule: wrapped up with at least one completed stage. */
+const REPORT_MIN_TASK: TaskId = 2;
+const reportAvailable = (session: MockSession): boolean =>
+  session.closed && session.task >= REPORT_MIN_TASK;
+
+const stateOf = (sessionId: string, session: MockSession): SessionStateView => ({
+  sessionId,
+  task: session.task,
+  taskLabel: TASK_LABELS[session.task],
+  progress: progressOf(session.task),
+  supportLevel: session.supportLevel,
+  closed: session.closed,
+  reportAvailable: reportAvailable(session),
+});
+
+const REPORT_ORDER: ReportSectionKey[] = ['journey', 'emotions', 'keepsake', 'encouragement'];
+
+const REPORT_TITLES: Record<Locale, Record<ReportSectionKey, string>> = {
+  ko: {
+    journey: '함께 걸어온 길',
+    emotions: '마음에 담긴 감정',
+    keepsake: '기억하고 싶은 것',
+    encouragement: '다독임 한마디',
+  },
+  en: {
+    journey: 'The path you walked',
+    emotions: 'What your heart carried',
+    keepsake: 'A keepsake to hold',
+    encouragement: 'A word for you',
+  },
+};
+
+/** Deterministic report bodies — mock content standing in for the model's writing. */
+function reportBodies(session: MockSession): Record<ReportSectionKey, string> {
+  const pet = session.petName;
+  const percent = Math.round(progressOf(session.task) * 100);
+  if (session.language === 'en') {
+    return {
+      journey: `Today you walked ${percent}% of the grief journey with ${pet}'s story, gently and at your own pace.`,
+      emotions: `Whatever rose in your heart today, it came from loving ${pet} — every bit of it is natural.`,
+      keepsake: `The moments you shared about ${pet} are worth keeping. Hold today's memory softly.`,
+      encouragement: `Thank you for your courage in sharing today. You did more than enough.`,
+    };
+  }
+  return {
+    journey: `오늘 ${pet}의 이야기와 함께 애도의 길을 ${percent}%만큼, 당신의 속도로 걸었어요.`,
+    emotions: `오늘 마음에 차올랐던 감정은 모두 ${pet}를 사랑했기에 드는 자연스러운 마음이에요.`,
+    keepsake: `${pet}에 대해 나눠주신 순간들은 간직할 가치가 있어요. 오늘의 기억을 부드럽게 담아두세요.`,
+    encouragement: `오늘 용기 내어 마음을 나눠주셔서 고마워요. 충분히 잘 해내셨어요.`,
+  };
+}

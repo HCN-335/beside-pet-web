@@ -31,6 +31,8 @@ interface SessionState {
   error?: string;
 
   startSession: (griefProfile?: GriefProfile) => Promise<void>;
+  /** Re-enters an existing session: loads its state + transcript, no greeting. */
+  resumeSession: (sessionId: string) => Promise<void>;
   sendUserMessage: (text: string) => Promise<void>;
   reset: () => void;
 }
@@ -142,6 +144,33 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       error: undefined,
     });
     await consumeStream(set, botId, data.startSessionStream(sessionId, griefProfile));
+  },
+
+  async resumeSession(sessionId) {
+    activeTyper?.cancel();
+    activeTyper = undefined;
+    set({ ...INITIAL });
+    try {
+      const [state, history] = await Promise.all([
+        data.getSessionState(sessionId),
+        data.getMessages(sessionId),
+      ]);
+      set({
+        sessionId,
+        messages: history.map((message, index) => ({
+          id: `history-${index}`,
+          role: message.role === 'user' ? 'user' : 'bot',
+          text: message.text,
+        })),
+        task: state.task,
+        taskLabel: state.taskLabel,
+        progress: state.progress,
+        supportLevel: state.supportLevel,
+        status: state.closed ? 'closed' : 'active',
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to resume the session.' });
+    }
   },
 
   async sendUserMessage(text) {

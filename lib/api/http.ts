@@ -5,7 +5,16 @@
  * per JSON-encoded StreamEvent. The httpOnly auth cookie travels via
  * credentials: 'include' (the JWT never lives in JS).
  */
-import type { Api, SessionListItem, StartRequest, StreamEvent, TurnResult } from './types';
+import type {
+  Api,
+  HistoryMessage,
+  MindReport,
+  SessionListItem,
+  SessionStateView,
+  StartRequest,
+  StreamEvent,
+  TurnResult,
+} from './types';
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
@@ -13,7 +22,7 @@ interface MessageBody {
   text: string;
 }
 
-type RequestBody = StartRequest | MessageBody;
+type RequestBody = StartRequest | MessageBody | Record<string, never>;
 
 const post = async <T>(path: string, body: RequestBody): Promise<T> => {
   const res = await fetch(`${BASE}${path}`, {
@@ -109,5 +118,21 @@ export const httpApi: Api = {
 
   listSessions(): Promise<SessionListItem[]> {
     return get('/v1/sessions');
+  },
+
+  getSessionState(sessionId: string): Promise<SessionStateView> {
+    return get(`/v1/sessions/${sessionId}`);
+  },
+
+  getMessages(sessionId: string): Promise<HistoryMessage[]> {
+    return get(`/v1/sessions/${sessionId}/messages`);
+  },
+
+  getReport(sessionId: string): Promise<MindReport> {
+    return get(`/v1/sessions/${sessionId}/report`);
+  },
+
+  closeSession(sessionId: string): Promise<SessionStateView> {
+    return post(`/v1/sessions/${sessionId}/close`, {});
   },
 };

@@ -85,6 +85,44 @@ export interface StartRequest {
   griefProfile?: GriefProfile;
 }
 
+/** One transcript message of a session (wire shape of the backend Message). */
+export interface HistoryMessage {
+  role: 'assistant' | 'user';
+  text: string;
+  task: TaskId;
+  at: string; // ISO timestamp
+}
+
+/** Current state of one session (resume / detail). */
+export interface SessionStateView {
+  sessionId: string;
+  task: TaskId;
+  taskLabel: string;
+  progress: number;
+  supportLevel: SupportLevel;
+  closed: boolean;
+  /** Whether the mind report can be viewed (wrapped up with enough progress). */
+  reportAvailable: boolean;
+}
+
+export type ReportSectionKey = 'journey' | 'emotions' | 'keepsake' | 'encouragement';
+
+export interface ReportSection {
+  key: ReportSectionKey;
+  title: string;
+  body: string;
+}
+
+/** User-facing mind report of a closed session (warm reflection, not analytics). */
+export interface MindReport {
+  at: string;
+  petName: string;
+  reachedTask: TaskId;
+  progress: number;
+  locale: Locale;
+  sections: ReportSection[];
+}
+
 /** One row of the returning user's session list (newest first). */
 export interface SessionListItem {
   sessionId: string;
@@ -95,6 +133,8 @@ export interface SessionListItem {
   petName?: string;
   /** The session's conversation language — used to restore the returning user's UI locale. */
   preferredLanguage: Locale;
+  /** Whether the mind report can be viewed (wrapped up with enough progress). */
+  reportAvailable: boolean;
 }
 
 /** The single data-layer abstraction. mock/real implement this interface.
@@ -109,4 +149,12 @@ export interface Api {
   sendMessageStream(sessionId: string, text: string): AsyncIterable<StreamEvent>;
   /** The signed-in owner's sessions, newest first. */
   listSessions(): Promise<SessionListItem[]>;
+  /** Current state of one owned session. */
+  getSessionState(sessionId: string): Promise<SessionStateView>;
+  /** Full transcript of one owned session. */
+  getMessages(sessionId: string): Promise<HistoryMessage[]>;
+  /** Mind report of a closed owned session. */
+  getReport(sessionId: string): Promise<MindReport>;
+  /** Ends an ongoing session (idempotent) and returns the resulting state. */
+  closeSession(sessionId: string): Promise<SessionStateView>;
 }

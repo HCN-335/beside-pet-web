@@ -17,8 +17,17 @@
  *   }
  *   // startSession() would then call historyCache.invalidate(userId).
  */
-import type { GriefProfile, SessionListItem, StreamEvent, TurnResult } from '@/lib/api';
+import type {
+  GriefProfile,
+  HistoryMessage,
+  MindReport,
+  SessionListItem,
+  SessionStateView,
+  StreamEvent,
+  TurnResult,
+} from '@/lib/api';
 import { api } from '@/lib/api';
+import { createCache } from '@/lib/cache/cache';
 
 /** `griefProfile` present = first-time (onboarding); omitted = continue from history. */
 export function startSession(sessionId: string, griefProfile?: GriefProfile): Promise<TurnResult> {
@@ -42,4 +51,33 @@ export function sendMessageStream(sessionId: string, text: string): AsyncIterabl
 
 export function listSessions(): Promise<SessionListItem[]> {
   return api.listSessions();
+}
+
+export function getSessionState(sessionId: string): Promise<SessionStateView> {
+  return api.getSessionState(sessionId);
+}
+
+export function getMessages(sessionId: string): Promise<HistoryMessage[]> {
+  return api.getMessages(sessionId);
+}
+
+// Mind report: each backend call writes the report with the model, so cache it.
+// Key = sessionId; a closed session's report is stable within the TTL.
+const reportCache = createCache<MindReport>(10 * 60_000);
+
+export async function getReport(sessionId: string): Promise<MindReport> {
+  const cached = reportCache.get(sessionId);
+  if (cached) {
+    return cached;
+  }
+  const fresh = await api.getReport(sessionId);
+  reportCache.set(sessionId, fresh);
+  return fresh;
+}
+
+/** Ends an ongoing session (idempotent). Invalidates its cached report. */
+export async function closeSession(sessionId: string): Promise<SessionStateView> {
+  const state = await api.closeSession(sessionId);
+  reportCache.invalidate(sessionId);
+  return state;
 }
