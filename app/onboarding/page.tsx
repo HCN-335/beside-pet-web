@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ChoiceChips } from '@/components/chat/ChoiceChips';
 import { Composer } from '@/components/chat/Composer';
 import { MessageList } from '@/components/chat/MessageList';
+import { useAuthStore } from '@/features/auth/auth.store';
 import { useOnboardingStore } from '@/features/onboarding/onboarding.store';
 import type { ChoiceOption } from '@/features/onboarding/onboarding.types';
 import { useSessionStore } from '@/features/session/session.store';
@@ -13,8 +14,9 @@ import { getMessages } from '@/i18n/registry';
 
 export default function OnboardingPage() {
   const translations = useTranslations();
-  const { locale, setLocale } = useLocale();
+  const { locale } = useLocale();
   const router = useRouter();
+  const setChatLanguage = useAuthStore((state) => state.setChatLanguage);
   const messages = useOnboardingStore((state) => state.messages);
   const status = useOnboardingStore((state) => state.status);
   const griefProfile = useOnboardingStore((state) => state.griefProfile);
@@ -26,31 +28,34 @@ export default function OnboardingPage() {
   const resetOnboarding = useOnboardingStore((state) => state.reset);
   const startSession = useSessionStore((state) => state.startSession);
 
+  // The onboarding chat speaks the chosen conversation language; the app UI
+  // language (locale cookie) is a separate setting and stays untouched here.
+  const chatLocale = griefProfile.preferredLanguage ?? locale;
+  const chatMessages = getMessages(chatLocale);
+
   // First question on entry (store.start is idempotent).
   useEffect(() => {
-    start(translations);
-  }, [start, translations]);
+    start(chatMessages);
+  }, [start, chatMessages]);
 
-  // Language choice unifies UI + counseling: switch the app locale immediately and
-  // render the rest of onboarding in the chosen language (using its catalog now, so
-  // there's no one-question lag). Other choices go straight through.
+  // The language answer becomes the account-level chat-language setting and the
+  // rest of the onboarding script continues in that language (no one-question lag).
   const onSelect = (option: ChoiceOption) => {
     const chosen = option.patch.preferredLanguage;
-    if (chosen && chosen !== locale) {
-      setLocale(chosen);
+    if (chosen) {
+      void setChatLanguage(chosen);
       select(getMessages(chosen), option);
     } else {
-      select(translations, option);
+      select(chatMessages, option);
     }
   };
 
   const beginSession = () => {
     // Kick off the session (sets status synchronously) and navigate immediately
     // so the greeting streams on the session screen rather than off-screen here.
-    // preferredLanguage always matches the app locale (unified language).
     void startSession({
       ...griefProfile,
-      preferredLanguage: griefProfile.preferredLanguage ?? locale,
+      preferredLanguage: chatLocale,
     });
     resetOnboarding();
     router.push('/session');
@@ -75,7 +80,7 @@ export default function OnboardingPage() {
         <ChoiceChips
           options={input.options}
           onSelect={onSelect}
-          onSkip={() => skip(translations)}
+          onSkip={() => skip(chatMessages)}
         />
       );
     }
@@ -83,7 +88,7 @@ export default function OnboardingPage() {
       <Composer
         disabled={false}
         placeholder={input?.placeholder}
-        onSend={(text) => answer(translations, text)}
+        onSend={(text) => answer(chatMessages, text)}
       />
     );
   };
