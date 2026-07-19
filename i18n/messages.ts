@@ -26,6 +26,15 @@ export interface Messages {
     setupTokenHint: string;
     setupSubmit: string;
     settingUp: string;
+    chatLanguage: string;
+    registerLink: string;
+    registerTitle: string;
+    registerSubtitle: string;
+    company: string;
+    registerSubmit: string;
+    registering: string;
+    registerDone: string;
+    backToLogin: string;
   };
   chat: {
     placeholder: string;
@@ -64,6 +73,32 @@ export interface Messages {
     ongoing: string;
     done: string;
     loading: string;
+    settings: string;
+    noOpenHint: string;
+    confirmNewTitle: string;
+    confirmNewBody: string;
+    confirmNewStart: string;
+    cancel: string;
+    viewTranscript: string;
+    viewReport: string;
+  };
+  sessionDetail: {
+    back: string;
+    loading: string;
+    loadFailed: string;
+    reportTitle: string;
+    reportLoading: string;
+    reportFailed: string;
+    reportNotReady: string;
+    continueButton: string;
+    ongoing: string;
+    done: string;
+  };
+  settings: {
+    title: string;
+    back: string;
+    uiLanguage: string;
+    chatLanguageHint: string;
   };
   safety: {
     title: string;

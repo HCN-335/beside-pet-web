@@ -9,9 +9,10 @@
  * backend reports first-run setup as pending, the setup form shows instead.
  */
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { LoginForm } from '@/features/auth/components/LoginForm';
+import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { SetupForm } from '@/features/auth/components/SetupForm';
 import { useTranslations } from '@/i18n/I18nProvider';
 
@@ -27,6 +28,7 @@ export default function HomePage() {
   const principal = useAuthStore((s) => s.principal);
   const setupRequired = useAuthStore((s) => s.setupRequired);
   const init = useAuthStore((s) => s.init);
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     void init();
@@ -56,7 +58,22 @@ export default function HomePage() {
         </div>
 
         <div className="flex flex-col items-center space-y-4">
-          {setupRequired ? <SetupForm /> : <LoginForm />}
+          {setupRequired ? (
+            <SetupForm />
+          ) : registering ? (
+            <RegisterForm onBackToLogin={() => setRegistering(false)} />
+          ) : (
+            <>
+              <LoginForm />
+              <button
+                type="button"
+                onClick={() => setRegistering(true)}
+                className="text-sm text-muted underline hover:text-foreground"
+              >
+                {translations.auth.registerLink}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </main>

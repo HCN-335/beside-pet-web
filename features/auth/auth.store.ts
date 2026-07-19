@@ -5,6 +5,7 @@
  * without touching admin-only endpoints. Role-based routing lives in the pages.
  */
 import { create } from 'zustand';
+import type { Locale } from '@/i18n/config';
 import * as api from './auth.api';
 import type { Principal } from './auth.types';
 
@@ -15,9 +16,15 @@ interface AuthState {
   error?: string;
   setupRequired: boolean; // backend has no admin yet → show first-run setup
 
+  /** A sign-up request was submitted and now awaits admin approval. */
+  registered: boolean;
+
   init: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, company: string) => Promise<void>;
+  resetRegistered: () => void;
   setup: (token: string, username: string, password: string) => Promise<void>;
+  setChatLanguage: (language: Locale) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -30,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   busy: false,
   error: undefined,
   setupRequired: false,
+  registered: false,
 
   async init() {
     try {
@@ -62,6 +70,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  async register(username, password, company) {
+    set({ busy: true, error: undefined });
+    try {
+      await api.register(username, password, company);
+      set({ registered: true });
+    } catch (error) {
+      set({ error: messageOf(error) });
+    } finally {
+      set({ busy: false });
+    }
+  },
+
+  resetRegistered() {
+    set({ registered: false, error: undefined });
+  },
+
   async setup(token, username, password) {
     set({ busy: true, error: undefined });
     try {
@@ -72,6 +96,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: messageOf(error) });
     } finally {
       set({ busy: false });
+    }
+  },
+
+  async setChatLanguage(language) {
+    try {
+      const principal = await api.updateChatLanguage(language);
+      set({ principal });
+    } catch (error) {
+      set({ error: messageOf(error) });
     }
   },
 

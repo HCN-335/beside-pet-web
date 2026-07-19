@@ -15,6 +15,7 @@ interface AdminState {
 
   refresh: () => Promise<void>;
   create: (input: CreateAccountInput) => Promise<void>;
+  approve: (id: string) => Promise<void>;
   revoke: (id: string) => Promise<void>;
   softDelete: (id: string) => Promise<void>;
   reactivate: (id: string) => Promise<void>;
@@ -49,6 +50,7 @@ export const useAdminStore = create<AdminState>((set, get) => {
     },
 
     create: (input) => mutate(() => api.createAccount(input)),
+    approve: (id) => mutate(() => api.approveAccount(id)),
     revoke: (id) => mutate(() => api.revokeAccount(id)),
     softDelete: (id) => mutate(() => api.softDeleteAccount(id)),
     reactivate: (id) => mutate(() => api.reactivateAccount(id)),

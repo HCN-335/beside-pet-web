@@ -5,7 +5,7 @@
  */
 import type { Role } from '@/features/auth/auth.types';
 
-export type AccountStatus = 'active' | 'revoked' | 'deleted';
+export type AccountStatus = 'pending' | 'active' | 'revoked' | 'deleted';
 
 export interface Account {
   id: string;

@@ -3,6 +3,7 @@
  * Sends the httpOnly auth cookie (credentials: 'include'); never holds the JWT
  * in JS. Base URL comes from NEXT_PUBLIC_API_BASE_URL (defaults to local backend).
  */
+import type { Locale } from '@/i18n/config';
 import type { Principal } from './auth.types';
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
@@ -55,9 +56,23 @@ export const setup = (token: string, username: string, password: string): Promis
     body: JSON.stringify({ token, username, password }),
   });
 
+/** Public account application — creates a pending account awaiting admin approval. */
+export const register = (username: string, password: string, company: string): Promise<void> =>
+  request('/v1/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ username, password, company }),
+  });
+
 export const login = (username: string, password: string): Promise<void> =>
   request('/v1/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
 
 export const logout = (): Promise<void> => request('/v1/auth/logout', { method: 'POST' });
 
 export const me = (): Promise<Principal> => request('/v1/auth/me');
+
+/** Set the account-level conversation language (independent of the UI locale). */
+export const updateChatLanguage = (chatLanguage: Locale): Promise<Principal> =>
+  request('/v1/auth/me/chat-language', {
+    method: 'PATCH',
+    body: JSON.stringify({ chatLanguage }),
+  });

@@ -46,6 +46,9 @@ export const listAccounts = (): Promise<Account[]> => request('/v1/admin/account
 export const createAccount = (input: CreateAccountInput): Promise<Account> =>
   request('/v1/admin/accounts', { method: 'POST', body: JSON.stringify(input) });
 
+export const approveAccount = (id: string): Promise<Account> =>
+  request(`/v1/admin/accounts/${id}/approve`, { method: 'POST' });
+
 export const revokeAccount = (id: string): Promise<Account> =>
   request(`/v1/admin/accounts/${id}/revoke`, { method: 'POST' });
 

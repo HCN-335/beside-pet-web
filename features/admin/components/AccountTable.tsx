@@ -11,6 +11,9 @@ import { fromLocalInput, toLocalDisplay, toLocalInput } from '../admin.time';
 import type { Account } from '../admin.types';
 
 const statusLabel = (account: Account): string => {
+  if (account.status === 'pending') {
+    return '승인 대기';
+  }
   if (account.status === 'deleted') {
     return '삭제됨';
   }
@@ -20,7 +23,12 @@ const statusLabel = (account: Account): string => {
   return account.expired ? '만료됨' : '활성';
 };
 
-const isDimmed = (account: Account): boolean => account.status !== 'active' || account.expired;
+const isDimmed = (account: Account): boolean =>
+  account.status === 'revoked' || account.status === 'deleted' || account.expired;
+
+/** Pending applications float to the top so they get acted on. */
+const byPendingFirst = (a: Account, b: Account): number =>
+  Number(b.status === 'pending') - Number(a.status === 'pending');
 
 export function AccountTable() {
   const accounts = useAdminStore((s) => s.accounts);
@@ -28,6 +36,7 @@ export function AccountTable() {
   if (accounts.length === 0) {
     return <p className="py-8 text-center text-sm text-muted">계정이 없습니다.</p>;
   }
+  const ordered = [...accounts].sort(byPendingFirst);
 
   return (
     <div className="overflow-x-auto rounded-xl border border-black/10">
@@ -43,7 +52,7 @@ export function AccountTable() {
           </tr>
         </thead>
         <tbody>
-          {accounts.map((account) => (
+          {ordered.map((account) => (
             <AccountRow key={account.id} account={account} />
           ))}
         </tbody>
@@ -54,6 +63,7 @@ export function AccountTable() {
 
 function AccountRow({ account }: { account: Account }) {
   const busy = useAdminStore((s) => s.busy);
+  const approve = useAdminStore((s) => s.approve);
   const revoke = useAdminStore((s) => s.revoke);
   const softDelete = useAdminStore((s) => s.softDelete);
   const reactivate = useAdminStore((s) => s.reactivate);
@@ -68,7 +78,9 @@ function AccountRow({ account }: { account: Account }) {
         {isAdmin && <span className="ml-1 text-xs text-accent">(admin)</span>}
       </td>
       <td className="px-3 py-2">{account.company}</td>
-      <td className="px-3 py-2">{statusLabel(account)}</td>
+      <td className={`px-3 py-2 ${account.status === 'pending' ? 'font-medium text-accent' : ''}`}>
+        {statusLabel(account)}
+      </td>
       <td className="px-3 py-2">
         {isAdmin ? <span className="text-muted">—</span> : <ExpiryEditor account={account} />}
       </td>
@@ -78,6 +90,16 @@ function AccountRow({ account }: { account: Account }) {
           <span className="text-muted">—</span>
         ) : (
           <div className="flex flex-wrap gap-1.5">
+            {account.status === 'pending' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void approve(account.id)}
+                className="rounded bg-accent px-2 py-1 text-xs font-medium text-accent-foreground disabled:opacity-50"
+              >
+                승인
+              </button>
+            )}
             {account.status === 'active' && (
               <button
                 type="button"
@@ -88,7 +110,7 @@ function AccountRow({ account }: { account: Account }) {
                 정지
               </button>
             )}
-            {account.status !== 'active' && (
+            {(account.status === 'revoked' || account.status === 'deleted') && (
               <button
                 type="button"
                 disabled={busy}
