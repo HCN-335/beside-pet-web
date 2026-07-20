@@ -2,17 +2,14 @@
 
 /**
  * /sessions/[id]/report — the mind report of one wrapped-up session.
- * Available only when the session carried enough of the journey
- * (state.reportAvailable); otherwise a gentle notice explains why.
+ * Available only when the session carried enough of the journey; otherwise a
+ * gentle notice explains why. Loading lives in session-archive.store.
  */
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useSessionArchiveStore } from '@/features/session-archive/session-archive.store';
 import { useTranslations } from '@/i18n/I18nProvider';
-import type { MindReport, SessionStateView } from '@/lib/api';
-import { getReport, getSessionState } from '@/lib/data';
-
-type ReportStatus = 'loading' | 'ready' | 'unavailable' | 'failed';
 
 export default function SessionReportPage() {
   const labels = useTranslations();
@@ -20,31 +17,19 @@ export default function SessionReportPage() {
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
 
-  const [state, setState] = useState<SessionStateView>();
-  const [report, setReport] = useState<MindReport>();
-  const [status, setStatus] = useState<ReportStatus>('loading');
+  const loadReport = useSessionArchiveStore((state) => state.loadReport);
+  const status = useSessionArchiveStore((state) => state.reportStatus);
+  const loadedId = useSessionArchiveStore((state) => state.reportId);
+  const report = useSessionArchiveStore((state) => state.report);
+  const session = useSessionArchiveStore((state) => state.detail);
 
   useEffect(() => {
-    let active = true;
-    getSessionState(sessionId)
-      .then((stateView) => {
-        if (!active) return undefined;
-        setState(stateView);
-        if (!stateView.reportAvailable) {
-          setStatus('unavailable');
-          return undefined;
-        }
-        return getReport(sessionId).then((mindReport) => {
-          if (!active) return;
-          setReport(mindReport);
-          setStatus('ready');
-        });
-      })
-      .catch(() => active && setStatus('failed'));
-    return () => {
-      active = false;
-    };
-  }, [sessionId]);
+    void loadReport(sessionId);
+  }, [sessionId, loadReport]);
+
+  // While navigating between sessions the slot still holds the previous one.
+  const current = loadedId === sessionId;
+  const progress = current && session ? Math.round(session.progress * 100) : undefined;
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
@@ -54,17 +39,22 @@ export default function SessionReportPage() {
         </Link>
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">{translations.reportTitle}</h1>
-          {state && <p className="text-xs text-muted">{Math.round(state.progress * 100)}%</p>}
+          {progress !== undefined && <p className="text-xs text-muted">{progress}%</p>}
         </div>
       </header>
 
       <section className="mt-6 space-y-3">
-        {status === 'loading' && <p className="text-sm text-muted">{translations.reportLoading}</p>}
-        {status === 'unavailable' && (
+        {(!current || status === 'loading' || status === 'idle') && (
+          <p className="text-sm text-muted">{translations.reportLoading}</p>
+        )}
+        {current && status === 'unavailable' && (
           <p className="text-sm leading-relaxed text-muted">{translations.reportNotReady}</p>
         )}
-        {status === 'failed' && <p className="text-sm text-muted">{translations.reportFailed}</p>}
-        {status === 'ready' &&
+        {current && status === 'failed' && (
+          <p className="text-sm text-muted">{translations.reportFailed}</p>
+        )}
+        {current &&
+          status === 'ready' &&
           report?.sections.map((section) => (
             <article
               key={section.key}

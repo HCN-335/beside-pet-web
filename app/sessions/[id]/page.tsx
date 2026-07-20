@@ -4,16 +4,16 @@
  * /sessions/[id] — one session's transcript.
  * Shows the full conversation record; the mind report lives on its own page
  * (/sessions/[id]/report). An ongoing session offers to re-enter the
- * conversation instead.
+ * conversation instead. Loading lives in session-archive.store; this page
+ * renders it and owns navigation.
  */
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { useSessionStore } from '@/features/session/session.store';
+import { useSessionArchiveStore } from '@/features/session-archive/session-archive.store';
 import { useTranslations } from '@/i18n/I18nProvider';
-import type { HistoryMessage, SessionStateView } from '@/lib/api';
-import { getMessages, getSessionState } from '@/lib/data';
 
 export default function SessionDetailPage() {
   const labels = useTranslations();
@@ -21,32 +21,24 @@ export default function SessionDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
-  const resumeSession = useSessionStore((state) => state.resumeSession);
 
-  const [state, setState] = useState<SessionStateView>();
-  const [history, setHistory] = useState<HistoryMessage[]>();
-  const [failed, setFailed] = useState(false);
+  const resumeSession = useSessionStore((state) => state.resumeSession);
+  const loadDetail = useSessionArchiveStore((state) => state.loadDetail);
+  const status = useSessionArchiveStore((state) => state.detailStatus);
+  const loadedId = useSessionArchiveStore((state) => state.detailId);
+  const session = useSessionArchiveStore((state) => state.detail);
+  const transcript = useSessionArchiveStore((state) => state.transcript);
 
   useEffect(() => {
-    let active = true;
-    Promise.all([getSessionState(sessionId), getMessages(sessionId)])
-      .then(([stateView, messages]) => {
-        if (!active) return;
-        setState(stateView);
-        setHistory(messages);
-      })
-      .catch(() => active && setFailed(true));
-    return () => {
-      active = false;
-    };
-  }, [sessionId]);
+    void loadDetail(sessionId);
+  }, [sessionId, loadDetail]);
 
   const onContinue = () => {
     void resumeSession(sessionId);
     router.push('/session');
   };
 
-  if (failed) {
+  if (status === 'failed') {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-muted">{translations.loadFailed}</p>
@@ -57,7 +49,8 @@ export default function SessionDetailPage() {
     );
   }
 
-  if (!state || !history) {
+  // `loadedId` guards the first render after navigating between sessions.
+  if (status !== 'ready' || loadedId !== sessionId || !session || !transcript) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 text-muted">
         {translations.loading}
@@ -74,22 +67,22 @@ export default function SessionDetailPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <h1 className="text-xl font-semibold tracking-tight">
-              {labels.taskLabels[state.task]}
+              {labels.taskLabels[session.task]}
             </h1>
-            <p className="text-xs text-muted">{Math.round(state.progress * 100)}%</p>
+            <p className="text-xs text-muted">{Math.round(session.progress * 100)}%</p>
           </div>
           <span
             className={`rounded-full px-3 py-1 text-xs ${
-              state.closed ? 'bg-black/5 text-muted' : 'bg-accent/10 font-medium text-accent'
+              session.closed ? 'bg-black/5 text-muted' : 'bg-accent/10 font-medium text-accent'
             }`}
           >
-            {state.closed ? translations.done : translations.ongoing}
+            {session.closed ? translations.done : translations.ongoing}
           </span>
         </div>
       </header>
 
       <section className="mt-6 space-y-3">
-        {history.map((message) => (
+        {transcript.map((message) => (
           <MessageBubble
             key={`${message.at}-${message.role}`}
             message={{
@@ -101,7 +94,7 @@ export default function SessionDetailPage() {
         ))}
       </section>
 
-      {!state.closed && (
+      {!session.closed && (
         <div className="mt-8">
           <button
             type="button"

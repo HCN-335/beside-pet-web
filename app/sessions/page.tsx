@@ -8,40 +8,42 @@
  * reached stage with cross-session context (no re-onboarding). Starting new
  * while a conversation is ongoing first wraps that one up (confirmed in a
  * dialog). Onboarding is only for first-timers (no sessions yet).
+ *
+ * Records come from session-archive.store; starting/resuming a conversation is
+ * session.store's job. This page renders and routes — the confirm dialog is
+ * screen-local, so it stays here.
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSessionStore } from '@/features/session/session.store';
+import { useSessionArchiveStore } from '@/features/session-archive/session-archive.store';
 import { useTranslations } from '@/i18n/I18nProvider';
-import type { SessionListItem } from '@/lib/api';
-import { closeSession, listSessions } from '@/lib/data';
 
 export default function SessionsPage() {
   const translations = useTranslations();
   const router = useRouter();
+
   const resumeSession = useSessionStore((state) => state.resumeSession);
   const startSession = useSessionStore((state) => state.startSession);
-  const [items, setItems] = useState<SessionListItem[]>();
+  const loadList = useSessionArchiveStore((state) => state.loadList);
+  const endSession = useSessionArchiveStore((state) => state.endSession);
+  const items = useSessionArchiveStore((state) => state.items);
+  const status = useSessionArchiveStore((state) => state.listStatus);
+  const busy = useSessionArchiveStore((state) => state.busy);
+
   const [confirmingNew, setConfirmingNew] = useState(false);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    listSessions()
-      .then((sessions) => {
-        if (!active) return;
-        if (sessions.length === 0) {
-          router.replace('/onboarding');
-          return;
-        }
-        setItems(sessions);
-      })
-      .catch(() => active && router.replace('/onboarding'));
-    return () => {
-      active = false;
-    };
-  }, [router]);
+    void loadList();
+  }, [loadList]);
+
+  // First-timers (and anyone whose list can't load) start at onboarding.
+  useEffect(() => {
+    if (status === 'failed' || (status === 'ready' && items?.length === 0)) {
+      router.replace('/onboarding');
+    }
+  }, [status, items, router]);
 
   const openSession = items?.find((item) => !item.closed);
 
@@ -66,17 +68,15 @@ export default function SessionsPage() {
 
   const onConfirmNew = async () => {
     if (!openSession) return;
-    setBusy(true);
     try {
-      await closeSession(openSession.sessionId);
+      await endSession(openSession.sessionId);
       startNew();
     } catch {
-      setBusy(false);
       setConfirmingNew(false);
     }
   };
 
-  if (!items) {
+  if (status !== 'ready' || !items) {
     return (
       <main className="flex flex-1 items-center justify-center px-6 text-muted">
         {translations.sessionList.loading}
