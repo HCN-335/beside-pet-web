@@ -99,6 +99,10 @@ export interface Messages {
     cancel: string;
     viewTranscript: string;
     viewReport: string;
+    deleteConversation: string;
+    confirmDeleteTitle: string;
+    confirmDeleteBody: string;
+    confirmDelete: string;
   };
   sessionDetail: {
     back: string;

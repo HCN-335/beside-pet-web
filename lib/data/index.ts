@@ -81,3 +81,9 @@ export async function closeSession(sessionId: string): Promise<SessionStateView>
   reportCache.invalidate(sessionId);
   return state;
 }
+
+/** Erases a session everywhere, including any copy of its report held here. */
+export async function deleteSession(sessionId: string): Promise<void> {
+  await api.deleteSession(sessionId);
+  reportCache.invalidate(sessionId);
+}

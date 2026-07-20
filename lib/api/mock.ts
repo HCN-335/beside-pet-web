@@ -89,6 +89,7 @@ interface MockSession {
   closed: boolean;
   supportLevel: SupportLevel;
   history: HistoryMessage[];
+  startedAt: string;
 }
 const sessions = new Map<string, MockSession>();
 
@@ -266,6 +267,7 @@ export const mockApi: Api = {
       closed: false,
       supportLevel: SUPPORT_LEVEL_SAFE,
       history: [],
+      startedAt: nextTimestamp(),
     };
     sessions.set(request.sessionId, session);
     const reply = resuming ? lines.resume(task, petName) : lines.intro(petName);
@@ -360,6 +362,7 @@ export const mockApi: Api = {
   async listSessions(): Promise<SessionListItem[]> {
     return [...sessions.entries()].reverse().map(([sessionId, session]) => ({
       sessionId,
+      startedAt: session.startedAt,
       closed: session.closed,
       reachedTask: session.task,
       progress: progressOf(session.task),
@@ -397,6 +400,10 @@ export const mockApi: Api = {
     const session = requireSession(sessionId);
     session.closed = true;
     return stateOf(sessionId, session);
+  },
+
+  async deleteSession(sessionId: string): Promise<void> {
+    sessions.delete(sessionId);
   },
 };
 

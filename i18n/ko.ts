@@ -110,6 +110,11 @@ export const ko: Messages = {
     cancel: '취소',
     viewTranscript: '대화 다시보기',
     viewReport: '마음 리포트',
+    deleteConversation: '삭제',
+    confirmDeleteTitle: '이 대화를 삭제할까요?',
+    confirmDeleteBody:
+      '대화 내용과 마음 리포트가 완전히 지워지고 되돌릴 수 없어요. 이후 상담도 이 대화를 참고하지 않아요.',
+    confirmDelete: '삭제하기',
   },
   sessionDetail: {
     back: '목록으로',

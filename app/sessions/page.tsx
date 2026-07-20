@@ -18,21 +18,25 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useSessionStore } from '@/features/session/session.store';
 import { useSessionArchiveStore } from '@/features/session-archive/session-archive.store';
-import { useTranslations } from '@/i18n/I18nProvider';
+import { useLocale, useTranslations } from '@/i18n/I18nProvider';
 
 export default function SessionsPage() {
   const translations = useTranslations();
+  const { locale } = useLocale();
   const router = useRouter();
 
   const resumeSession = useSessionStore((state) => state.resumeSession);
   const startSession = useSessionStore((state) => state.startSession);
   const loadList = useSessionArchiveStore((state) => state.loadList);
   const endSession = useSessionArchiveStore((state) => state.endSession);
+  const removeSession = useSessionArchiveStore((state) => state.removeSession);
   const items = useSessionArchiveStore((state) => state.items);
   const status = useSessionArchiveStore((state) => state.listStatus);
   const busy = useSessionArchiveStore((state) => state.busy);
 
   const [confirmingNew, setConfirmingNew] = useState(false);
+  /** Session pending deletion, held while the confirm dialog is open. */
+  const [deletingId, setDeletingId] = useState<string>();
 
   useEffect(() => {
     void loadList();
@@ -64,6 +68,15 @@ export default function SessionsPage() {
       return;
     }
     startNew();
+  };
+
+  const onConfirmDelete = async () => {
+    if (!deletingId) return;
+    try {
+      await removeSession(deletingId);
+    } finally {
+      setDeletingId(undefined);
+    }
   };
 
   const onConfirmNew = async () => {
@@ -110,7 +123,10 @@ export default function SessionsPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="font-medium">{translations.taskLabels[item.reachedTask]}</p>
-                {item.petName && <p className="text-xs text-muted">{item.petName}</p>}
+                <p className="text-xs text-muted">
+                  {new Date(item.startedAt).toLocaleString(locale)}
+                  {item.petName && ` · ${item.petName}`}
+                </p>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted">
                 <span>{Math.round(item.progress * 100)}%</span>
@@ -138,6 +154,13 @@ export default function SessionsPage() {
                   {translations.sessionList.viewReport}
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => setDeletingId(item.sessionId)}
+                className="ml-auto rounded-lg border border-red-300/60 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-500/10"
+              >
+                {translations.sessionList.deleteConversation}
+              </button>
             </div>
           </li>
         ))}
@@ -165,6 +188,35 @@ export default function SessionsPage() {
           <p className="text-xs text-muted">{translations.sessionList.noOpenHint}</p>
         )}
       </div>
+
+      {deletingId && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-sm space-y-4 rounded-2xl bg-background p-6 shadow-xl">
+            <h2 className="text-lg font-semibold">{translations.sessionList.confirmDeleteTitle}</h2>
+            <p className="text-sm leading-relaxed text-muted">
+              {translations.sessionList.confirmDeleteBody}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingId(undefined)}
+                disabled={busy}
+                className="rounded-lg px-4 py-2 text-sm text-muted transition-colors hover:bg-black/5"
+              >
+                {translations.sessionList.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void onConfirmDelete()}
+                disabled={busy}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {translations.sessionList.confirmDelete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmingNew && (
         <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 px-6">

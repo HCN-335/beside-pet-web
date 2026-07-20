@@ -18,6 +18,7 @@ export interface HttpClient {
   /** `body` is any JSON-serializable object; omit it for bodiless calls. */
   post<Result>(path: string, body?: object): Promise<Result>;
   patch<Result>(path: string, body?: object): Promise<Result>;
+  delete<Result>(path: string): Promise<Result>;
   /** Opens an SSE POST and yields each frame's `data:` payload, still raw. */
   streamFrames(path: string, body?: object): AsyncIterable<string>;
 }
@@ -100,6 +101,7 @@ export function createHttpClient({ baseUrl }: HttpClientOptions): HttpClient {
     get: (path) => send(path, { method: 'GET' }),
     post: (path, body) => send(path, withBody('POST', body)),
     patch: (path, body) => send(path, withBody('PATCH', body)),
+    delete: (path) => send(path, { method: 'DELETE' }),
     streamFrames,
   };
 }

@@ -44,6 +44,8 @@ interface SessionArchiveState {
   loadReport: (sessionId: string) => Promise<void>;
   /** Ends an ongoing conversation; the list is refreshed on its next load. */
   endSession: (sessionId: string) => Promise<void>;
+  /** Erases a conversation for good, then reloads the list. */
+  removeSession: (sessionId: string) => Promise<void>;
 }
 
 /** Load tokens: only the newest request for each slot may write its result. */
@@ -122,6 +124,22 @@ export const useSessionArchiveStore = create<SessionArchiveState>((set) => ({
       await data.closeSession(sessionId);
       // The list is stale now; the next visit reloads it.
       set({ items: undefined, listStatus: 'idle' });
+    } finally {
+      set({ busy: false });
+    }
+  },
+
+  async removeSession(sessionId) {
+    set({ busy: true });
+    try {
+      await data.deleteSession(sessionId);
+      // Drop anything still held about it, then show the remaining list.
+      set((state) => ({
+        detail: state.detailId === sessionId ? undefined : state.detail,
+        transcript: state.detailId === sessionId ? undefined : state.transcript,
+        report: state.reportId === sessionId ? undefined : state.report,
+      }));
+      await useSessionArchiveStore.getState().loadList();
     } finally {
       set({ busy: false });
     }

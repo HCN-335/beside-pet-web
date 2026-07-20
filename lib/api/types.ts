@@ -122,6 +122,8 @@ export interface MindReport {
 /** One row of the returning user's session list (newest first). */
 export interface SessionListItem {
   sessionId: string;
+  /** UTC instant the conversation began (ISO-8601). */
+  startedAt: string;
   closed: boolean;
   reachedTask: TaskId;
   progress: number;
@@ -152,4 +154,6 @@ export interface Api {
   getReport(sessionId: string): Promise<MindReport>;
   /** Ends an ongoing session (idempotent) and returns the resulting state. */
   closeSession(sessionId: string): Promise<SessionStateView>;
+  /** Erases a session, its report, and its analyses. Irreversible. */
+  deleteSession(sessionId: string): Promise<void>;
 }

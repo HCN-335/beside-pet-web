@@ -76,4 +76,8 @@ export const httpApi: Api = {
   closeSession(sessionId: string): Promise<SessionStateView> {
     return http.post(`/v1/sessions/${sessionId}/close`);
   },
+
+  deleteSession(sessionId: string): Promise<void> {
+    return http.delete(`/v1/sessions/${sessionId}`);
+  },
 };

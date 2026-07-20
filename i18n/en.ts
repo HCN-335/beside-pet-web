@@ -116,6 +116,11 @@ export const en: Messages = {
     cancel: 'Cancel',
     viewTranscript: 'View conversation',
     viewReport: 'Mind report',
+    deleteConversation: 'Delete',
+    confirmDeleteTitle: 'Delete this conversation?',
+    confirmDeleteBody:
+      'The transcript and its mind report are erased for good, and later conversations will no longer draw on it.',
+    confirmDelete: 'Delete',
   },
   sessionDetail: {
     back: 'Back to sessions',
