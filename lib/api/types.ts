@@ -47,7 +47,6 @@ export interface GriefProfile {
 export interface TurnResult {
   reply: string;
   task: TaskId;
-  taskLabel: string;
   progress: number; // 0..1
   supportLevel: SupportLevel;
   done: boolean; // session ended (closed / safety hand-off)
@@ -61,7 +60,6 @@ export interface TurnResult {
 export interface MetaEvent {
   kind: 'meta';
   task: TaskId;
-  taskLabel: string;
   progress: number;
   supportLevel: SupportLevel;
   done: boolean;
@@ -97,7 +95,6 @@ export interface HistoryMessage {
 export interface SessionStateView {
   sessionId: string;
   task: TaskId;
-  taskLabel: string;
   progress: number;
   supportLevel: SupportLevel;
   closed: boolean;
@@ -109,7 +106,6 @@ export type ReportSectionKey = 'journey' | 'emotions' | 'keepsake' | 'encouragem
 
 export interface ReportSection {
   key: ReportSectionKey;
-  title: string;
   body: string;
 }
 
@@ -128,7 +124,6 @@ export interface SessionListItem {
   sessionId: string;
   closed: boolean;
   reachedTask: TaskId;
-  taskLabel: string;
   progress: number;
   petName?: string;
   /** The session's conversation language — used to restore the returning user's UI locale. */

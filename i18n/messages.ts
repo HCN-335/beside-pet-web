@@ -3,7 +3,15 @@
  * Every locale catalog must satisfy `Messages`, so a missing or extra key
  * is a build error. Entries that need runtime values are functions.
  */
-import type { GriefPath, LossType, SituationType, SleepState, TogetherRange } from '@/lib/api';
+import type {
+  GriefPath,
+  LossType,
+  ReportSectionKey,
+  SituationType,
+  SleepState,
+  TaskId,
+  TogetherRange,
+} from '@/lib/api';
 
 export interface Messages {
   landing: {
@@ -59,6 +67,10 @@ export interface Messages {
     path: Record<GriefPath, string>;
     sleep: Record<SleepState, string>;
   };
+  /** Stage names. The backend sends the stage id; naming it is the client's job. */
+  taskLabels: Record<TaskId, string>;
+  /** Mind-report card titles, keyed by the section the backend sends. */
+  reportSections: Record<ReportSectionKey, string>;
   session: {
     noSession: string;
     toHome: string;

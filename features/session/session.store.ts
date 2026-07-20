@@ -23,7 +23,6 @@ interface SessionState {
   sessionId?: string;
   messages: Message[];
   task: TaskId;
-  taskLabel: string;
   progress: number; // 0..1
   supportLevel: SupportLevel;
   status: SessionStatus;
@@ -44,7 +43,6 @@ const INITIAL = {
   sessionId: undefined,
   messages: [] as Message[],
   task: 0 as TaskId,
-  taskLabel: '',
   progress: 0,
   supportLevel: 1 as SupportLevel,
   status: 'idle' as SessionStatus,
@@ -92,7 +90,6 @@ const consumeStream = (
           ...(result
             ? {
                 task: result.task,
-                taskLabel: result.taskLabel,
                 progress: result.progress,
                 supportLevel: result.supportLevel,
                 status: (result.done ? 'closed' : 'active') as SessionStatus,
@@ -110,7 +107,6 @@ const consumeStream = (
           if (event.kind === 'meta') {
             set({
               task: event.task,
-              taskLabel: event.taskLabel,
               progress: event.progress,
               supportLevel: event.supportLevel,
             });
@@ -163,7 +159,6 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           text: message.text,
         })),
         task: state.task,
-        taskLabel: state.taskLabel,
         progress: state.progress,
         supportLevel: state.supportLevel,
         status: state.closed ? 'closed' : 'active',

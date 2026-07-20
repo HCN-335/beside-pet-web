@@ -109,7 +109,7 @@ export default function SessionsPage() {
           >
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <p className="font-medium">{item.taskLabel}</p>
+                <p className="font-medium">{translations.taskLabels[item.reachedTask]}</p>
                 {item.petName && <p className="text-xs text-muted">{item.petName}</p>}
               </div>
               <div className="flex items-center gap-3 text-xs text-muted">

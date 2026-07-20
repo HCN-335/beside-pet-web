@@ -44,7 +44,6 @@ async function* streamTurn(turn: TurnResult): AsyncIterable<StreamEvent> {
   yield {
     kind: 'meta',
     task: turn.task,
-    taskLabel: turn.taskLabel,
     progress: turn.progress,
     supportLevel: turn.supportLevel,
     done: turn.done,
@@ -59,14 +58,6 @@ async function* streamTurn(turn: TurnResult): AsyncIterable<StreamEvent> {
   yield { kind: 'done', result: turn };
 }
 
-const TASK_LABELS: Record<TaskId, string> = {
-  0: '온보딩',
-  1: '상실의 현실 받아들이기',
-  2: '슬픔의 감정 마주하기',
-  3: '없는 일상에 적응하기',
-  4: '연결을 간직하며 나아가기',
-  5: '마무리',
-};
 const NEXT_TASK: Record<TaskId, TaskId> = { 0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 5 };
 
 /** Depth gate — stay on a stage this many turns, cap here, exit early if disengaged. */
@@ -282,7 +273,6 @@ export const mockApi: Api = {
     return {
       reply,
       task,
-      taskLabel: TASK_LABELS[task],
       progress: progressOf(task),
       supportLevel: SUPPORT_LEVEL_SAFE,
       done: false,
@@ -308,7 +298,6 @@ export const mockApi: Api = {
       return {
         reply: lines.crisis,
         task: session.task,
-        taskLabel: TASK_LABELS[session.task],
         progress: progressOf(session.task),
         supportLevel: SUPPORT_LEVEL_CRISIS,
         done: true,
@@ -337,7 +326,6 @@ export const mockApi: Api = {
       return {
         reply: lines.closing,
         task: 5,
-        taskLabel: TASK_LABELS[5],
         progress: 1,
         supportLevel: SUPPORT_LEVEL_SAFE,
         done: true,
@@ -355,7 +343,6 @@ export const mockApi: Api = {
     return {
       reply,
       task: session.task,
-      taskLabel: TASK_LABELS[session.task],
       progress: progressOf(session.task),
       supportLevel: SUPPORT_LEVEL_SAFE,
       done: false,
@@ -375,7 +362,6 @@ export const mockApi: Api = {
       sessionId,
       closed: session.closed,
       reachedTask: session.task,
-      taskLabel: TASK_LABELS[session.task],
       progress: progressOf(session.task),
       petName: session.petName,
       preferredLanguage: session.language,
@@ -396,7 +382,6 @@ export const mockApi: Api = {
     if (!reportAvailable(session)) {
       throw new Error('The report is not available for this session yet.');
     }
-    const titles = REPORT_TITLES[session.language] ?? REPORT_TITLES[DEFAULT_LOCALE];
     const bodies = reportBodies(session);
     return {
       at: nextTimestamp(),
@@ -404,7 +389,7 @@ export const mockApi: Api = {
       reachedTask: session.task,
       progress: progressOf(session.task),
       locale: session.language,
-      sections: REPORT_ORDER.map((key) => ({ key, title: titles[key], body: bodies[key] })),
+      sections: REPORT_ORDER.map((key) => ({ key, body: bodies[key] })),
     };
   },
 
@@ -431,7 +416,6 @@ const reportAvailable = (session: MockSession): boolean =>
 const stateOf = (sessionId: string, session: MockSession): SessionStateView => ({
   sessionId,
   task: session.task,
-  taskLabel: TASK_LABELS[session.task],
   progress: progressOf(session.task),
   supportLevel: session.supportLevel,
   closed: session.closed,
@@ -439,21 +423,6 @@ const stateOf = (sessionId: string, session: MockSession): SessionStateView => (
 });
 
 const REPORT_ORDER: ReportSectionKey[] = ['journey', 'emotions', 'keepsake', 'encouragement'];
-
-const REPORT_TITLES: Record<Locale, Record<ReportSectionKey, string>> = {
-  ko: {
-    journey: '함께 걸어온 길',
-    emotions: '마음에 담긴 감정',
-    keepsake: '기억하고 싶은 것',
-    encouragement: '다독임 한마디',
-  },
-  en: {
-    journey: 'The path you walked',
-    emotions: 'What your heart carried',
-    keepsake: 'A keepsake to hold',
-    encouragement: 'A word for you',
-  },
-};
 
 /** Deterministic report bodies — mock content standing in for the model's writing. */
 function reportBodies(session: MockSession): Record<ReportSectionKey, string> {

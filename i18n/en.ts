@@ -72,6 +72,20 @@ export const en: Messages = {
     path: { afterLoss: 'They have already passed', beforeLoss: 'They are still with me' },
     sleep: { ok: 'I sleep okay', fair: 'So-so', disturbed: 'I barely sleep' },
   },
+  taskLabels: {
+    0: 'Onboarding',
+    1: 'Accepting the reality of the loss',
+    2: 'Facing the feelings of grief',
+    3: 'Adjusting to daily life without them',
+    4: 'Carrying the bond forward',
+    5: 'Closing',
+  },
+  reportSections: {
+    journey: 'The path you walked',
+    emotions: 'What your heart carried',
+    keepsake: 'A keepsake to hold',
+    encouragement: 'A word for you',
+  },
   session: {
     noSession: 'There is no session in progress.',
     toHome: 'Back to start',

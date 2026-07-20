@@ -15,7 +15,8 @@ import { getReport, getSessionState } from '@/lib/data';
 type ReportStatus = 'loading' | 'ready' | 'unavailable' | 'failed';
 
 export default function SessionReportPage() {
-  const translations = useTranslations().sessionDetail;
+  const labels = useTranslations();
+  const translations = labels.sessionDetail;
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
 
@@ -69,7 +70,9 @@ export default function SessionReportPage() {
               key={section.key}
               className="space-y-1 rounded-xl border border-black/5 bg-surface px-4 py-3"
             >
-              <h3 className="text-sm font-medium text-accent">{section.title}</h3>
+              <h3 className="text-sm font-medium text-accent">
+                {labels.reportSections[section.key]}
+              </h3>
               <p className="text-[15px] leading-relaxed">{section.body}</p>
             </article>
           ))}

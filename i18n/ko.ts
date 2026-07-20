@@ -66,6 +66,20 @@ export const ko: Messages = {
     path: { afterLoss: '이미 곁을 떠났어요', beforeLoss: '아직 함께 있어요' },
     sleep: { ok: '잘 자는 편이에요', fair: '그저 그래요', disturbed: '잘 못 자요' },
   },
+  taskLabels: {
+    0: '온보딩',
+    1: '상실의 현실 받아들이기',
+    2: '슬픔의 감정 마주하기',
+    3: '없는 일상에 적응하기',
+    4: '연결을 간직하며 나아가기',
+    5: '마무리',
+  },
+  reportSections: {
+    journey: '함께 걸어온 길',
+    emotions: '마음에 담긴 감정',
+    keepsake: '기억하고 싶은 것',
+    encouragement: '다독임 한마디',
+  },
   session: {
     noSession: '진행 중인 세션이 없어요.',
     toHome: '처음으로',

@@ -16,7 +16,8 @@ import type { HistoryMessage, SessionStateView } from '@/lib/api';
 import { getMessages, getSessionState } from '@/lib/data';
 
 export default function SessionDetailPage() {
-  const translations = useTranslations().sessionDetail;
+  const labels = useTranslations();
+  const translations = labels.sessionDetail;
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const sessionId = params.id;
@@ -72,7 +73,9 @@ export default function SessionDetailPage() {
         </Link>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <h1 className="text-xl font-semibold tracking-tight">{state.taskLabel}</h1>
+            <h1 className="text-xl font-semibold tracking-tight">
+              {labels.taskLabels[state.task]}
+            </h1>
             <p className="text-xs text-muted">{Math.round(state.progress * 100)}%</p>
           </div>
           <span

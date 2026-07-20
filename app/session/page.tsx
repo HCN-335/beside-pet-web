@@ -12,7 +12,7 @@ export default function SessionPage() {
   const translations = useTranslations();
   const status = useSessionStore((state) => state.status);
   const messages = useSessionStore((state) => state.messages);
-  const taskLabel = useSessionStore((state) => state.taskLabel);
+  const task = useSessionStore((state) => state.task);
   const progress = useSessionStore((state) => state.progress);
   const supportLevel = useSessionStore((state) => state.supportLevel);
   const streaming = useSessionStore((state) => state.streaming);
@@ -39,7 +39,7 @@ export default function SessionPage() {
       <header className="sticky top-0 z-10 border-b border-black/5 bg-background/95 px-4 py-3 backdrop-blur">
         <div className="flex items-center gap-4">
           <div className="min-w-0 flex-1">
-            <ProgressBar taskLabel={taskLabel} progress={progress} />
+            <ProgressBar task={task} progress={progress} />
           </div>
           <Link href="/settings" className="shrink-0 text-xs text-muted underline">
             {translations.settings.title}
