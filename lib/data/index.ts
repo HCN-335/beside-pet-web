@@ -61,8 +61,8 @@ export function getMessages(sessionId: string): Promise<HistoryMessage[]> {
   return api.getMessages(sessionId);
 }
 
-// Mind report: each backend call writes the report with the model, so cache it.
-// Key = sessionId; a closed session's report is stable within the TTL.
+// Mind report: the backend now writes it once and stores it with the session,
+// so this cache only saves a round trip, not a model call. Key = sessionId.
 const reportCache = createCache<MindReport>(10 * 60_000);
 
 export async function getReport(sessionId: string): Promise<MindReport> {
