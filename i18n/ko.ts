@@ -122,6 +122,8 @@ export const ko: Messages = {
     back: '뒤로',
     uiLanguage: '앱 언어',
     chatLanguageHint: '다음 답변부터 적용돼요.',
+    account: '계정',
+    signedInAs: (username) => `${username} 으로 로그인 중`,
   },
   admin: {
     title: '계정 관리',

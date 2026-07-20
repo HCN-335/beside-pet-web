@@ -128,6 +128,8 @@ export const en: Messages = {
     back: 'Back',
     uiLanguage: 'App language',
     chatLanguageHint: 'Applies from the next reply in your conversation.',
+    account: 'Account',
+    signedInAs: (username) => `Signed in as ${username}`,
   },
   admin: {
     title: 'Accounts',

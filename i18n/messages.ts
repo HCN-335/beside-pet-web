@@ -111,6 +111,8 @@ export interface Messages {
     back: string;
     uiLanguage: string;
     chatLanguageHint: string;
+    account: string;
+    signedInAs: (username: string) => string;
   };
   admin: {
     title: string;
