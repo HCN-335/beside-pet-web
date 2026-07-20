@@ -91,6 +91,13 @@ export const en: Messages = {
     toHome: 'Back to start',
     closed: 'We have wrapped up today’s session. Come back anytime.',
     progressFallback: 'Getting ready',
+    toList: 'Conversations',
+    endConversation: 'Wrap up',
+    confirmEndTitle: 'Wrap up today’s conversation?',
+    confirmEndBody:
+      'You will not be able to continue this one, but you can revisit it from the list and read its mind report.',
+    confirmEnd: 'Wrap up',
+    cancel: 'Cancel',
   },
   sessionList: {
     title: 'Welcome back',

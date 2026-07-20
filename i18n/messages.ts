@@ -76,6 +76,12 @@ export interface Messages {
     toHome: string;
     closed: string;
     progressFallback: string;
+    toList: string;
+    endConversation: string;
+    confirmEndTitle: string;
+    confirmEndBody: string;
+    confirmEnd: string;
+    cancel: string;
   };
   sessionList: {
     title: string;

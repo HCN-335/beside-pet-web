@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from '@/i18n/I18nProvider';
 
 /** Hard cap per message; the counter below the field shows usage against it. */
@@ -21,12 +21,26 @@ export function Composer({
   const translations = useTranslations();
   const [text, setText] = useState('');
   const fieldRef = useRef<HTMLTextAreaElement>(null);
+  /** Set on send so the field can reclaim focus once the reply finishes. */
+  const refocusPending = useRef(false);
+
+  // Sending disables the field, which drops focus; restore it when the reply
+  // lands so the next turn needs no extra click. Never steals focus on mount.
+  useEffect(() => {
+    if (!disabled && refocusPending.current) {
+      refocusPending.current = false;
+      fieldRef.current?.focus();
+    }
+  }, [disabled]);
 
   const resize = (): void => {
     const field = fieldRef.current;
     if (!field) return;
     field.style.height = 'auto';
-    field.style.height = `${Math.min(field.scrollHeight, MAX_FIELD_HEIGHT_PX)}px`;
+    const full = field.scrollHeight;
+    field.style.height = `${Math.min(full, MAX_FIELD_HEIGHT_PX)}px`;
+    // Only scrollable once it has reached its cap, so no bar appears before that.
+    field.style.overflowY = full > MAX_FIELD_HEIGHT_PX ? 'auto' : 'hidden';
   };
 
   const submit = () => {
@@ -34,6 +48,7 @@ export function Composer({
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setText('');
+    refocusPending.current = true;
     requestAnimationFrame(resize);
   };
 
@@ -64,7 +79,7 @@ export function Composer({
           }}
           disabled={disabled}
           placeholder={placeholder ?? translations.chat.placeholder}
-          className="block w-full resize-none overflow-y-auto rounded-xl border border-black/10 bg-background px-4 py-2.5 leading-relaxed outline-none focus:border-accent disabled:opacity-50"
+          className="no-scrollbar block w-full resize-none overflow-y-hidden rounded-xl border border-black/10 bg-background px-4 py-2.5 leading-relaxed outline-none focus:border-accent disabled:opacity-50"
         />
         <p
           className={`mt-1 pr-1 text-right text-[11px] ${

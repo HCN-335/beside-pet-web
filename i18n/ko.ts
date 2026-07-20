@@ -85,6 +85,13 @@ export const ko: Messages = {
     toHome: '처음으로',
     closed: '오늘 세션을 마무리했어요. 언제든 다시 찾아와 주세요.',
     progressFallback: '상담 준비',
+    toList: '대화 목록',
+    endConversation: '대화 마치기',
+    confirmEndTitle: '오늘 대화를 마칠까요?',
+    confirmEndBody:
+      '마치고 나면 이 대화는 이어갈 수 없지만, 목록에서 다시 보고 마음 리포트를 받을 수 있어요.',
+    confirmEnd: '마치기',
+    cancel: '취소',
   },
   sessionList: {
     title: '다시 오셨네요',
