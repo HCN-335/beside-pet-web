@@ -112,6 +112,33 @@ export interface Messages {
     uiLanguage: string;
     chatLanguageHint: string;
   };
+  admin: {
+    title: string;
+    signedInAs: (username: string) => string;
+    empty: string;
+    columnUsername: string;
+    columnCompany: string;
+    columnStatus: string;
+    columnExpiry: string;
+    columnLastLogin: string;
+    columnActions: string;
+    statusPending: string;
+    statusActive: string;
+    statusRevoked: string;
+    statusDeleted: string;
+    statusExpired: string;
+    approve: string;
+    revoke: string;
+    reactivate: string;
+    delete: string;
+    setExpiry: string;
+    clearExpiry: string;
+    formUsername: string;
+    formPassword: string;
+    formCompany: string;
+    formExpiry: string;
+    formSubmit: string;
+  };
   safety: {
     title: string;
     body: string;

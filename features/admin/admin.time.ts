@@ -2,7 +2,10 @@
  * features/admin/admin.time.ts — local ↔ absolute-UTC conversion for account expiry.
  * The backend stores and enforces an absolute UTC instant; the browser only converts
  * for the admin's local timezone on input (datetime-local picker) and display.
+ * Display follows the app language, not the OS locale, so the console reads in
+ * one language throughout.
  */
+import type { Locale } from '@/i18n/config';
 
 /** UTC instant → value for an <input type="datetime-local"> in the admin's local timezone. */
 export const toLocalInput = (utcIso?: string): string => {
@@ -26,11 +29,11 @@ export const fromLocalInput = (value: string): string | undefined => {
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 };
 
-/** UTC instant → human-readable string in the admin's local timezone. */
-export const toLocalDisplay = (utcIso?: string): string => {
+/** UTC instant → human-readable string in the admin's local timezone, in `locale`. */
+export const toLocalDisplay = (utcIso: string | undefined, locale: Locale): string => {
   if (!utcIso) {
     return '—';
   }
   const d = new Date(utcIso);
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(locale);
 };
