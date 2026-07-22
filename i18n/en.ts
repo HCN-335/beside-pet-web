@@ -66,7 +66,7 @@ export const en: Messages = {
     situation: {
       aging: 'Old age',
       endOfLife: 'Terminal illness',
-      ongoingCare: 'In treatment',
+      ongoingCare: 'In ongoing care',
       other: 'Other',
     },
     path: { afterLoss: 'They have already passed', beforeLoss: 'They are still with me' },
