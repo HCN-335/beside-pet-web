@@ -1,0 +1,7 @@
+packages:
+  - '.'
+
+# sharp (Next image optimization) ships a native binary whose postinstall must
+# run; pnpm 10+ blocks dependency scripts unless explicitly approved here.
+onlyBuiltDependencies:
+  - sharp
