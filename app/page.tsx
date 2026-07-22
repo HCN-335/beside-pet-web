@@ -15,6 +15,7 @@ import { LoginForm } from '@/features/auth/components/LoginForm';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { SetupForm } from '@/features/auth/components/SetupForm';
 import { useTranslations } from '@/i18n/I18nProvider';
+import { LocaleSelect } from '@/i18n/LocaleSelect';
 
 const HOME_FOR_ROLE: Record<string, string> = {
   admin: '/admin',
@@ -46,7 +47,10 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6">
+    <main className="relative flex flex-1 items-center justify-center px-6">
+      <div className="absolute top-4 right-4">
+        <LocaleSelect />
+      </div>
       <div className="w-full max-w-sm space-y-8 text-center">
         <div className="space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight">{translations.landing.title}</h1>

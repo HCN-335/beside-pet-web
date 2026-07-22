@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { useSessionStore } from '@/features/session/session.store';
 import { useSessionArchiveStore } from '@/features/session-archive/session-archive.store';
 import { useLocale, useTranslations } from '@/i18n/I18nProvider';
+import { LocaleSelect } from '@/i18n/LocaleSelect';
 
 export default function SessionsPage() {
   const translations = useTranslations();
@@ -106,12 +107,15 @@ export default function SessionsPage() {
           </h1>
           <p className="text-muted">{translations.sessionList.subtitle}</p>
         </div>
-        <Link
-          href="/settings"
-          className="shrink-0 rounded-lg border border-black/10 px-3 py-1.5 text-sm text-muted transition-colors hover:bg-black/5"
-        >
-          {translations.sessionList.settings}
-        </Link>
+        <div className="flex shrink-0 items-center gap-3">
+          <LocaleSelect />
+          <Link
+            href="/settings"
+            className="rounded-lg border border-black/10 px-3 py-1.5 text-sm text-muted transition-colors hover:bg-black/5"
+          >
+            {translations.sessionList.settings}
+          </Link>
+        </div>
       </header>
 
       <ul className="mt-6 space-y-2">
