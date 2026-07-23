@@ -34,6 +34,9 @@
 
 ## 화면
 
+<p align="center"><img src="docs/screenshots/chat-streaming.gif" width="80%" alt="상담 스트리밍 — 메시지를 보내면 동반자의 응답이 실시간으로 흘러나온다" /></p>
+<p align="center"><b>실시간 상담</b> — SSE 스트리밍 + 타이프라이터 페이싱으로 응답이 흘러나온다</p>
+
 | | |
 |---|---|
 | ![로그인 — 앱 언어 선택](docs/screenshots/01-login.png) | ![온보딩 — 스크립트 인테이크](docs/screenshots/02-onboarding.png) |
