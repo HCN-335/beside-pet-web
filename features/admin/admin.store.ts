@@ -22,9 +22,6 @@ interface AdminState {
   setExpiry: (id: string, expiresAt?: string) => Promise<void>;
 }
 
-const messageOf = (error: unknown): string =>
-  error instanceof Error ? error.message : 'Request failed.';
-
 export const useAdminStore = create<AdminState>((set, get) => {
   /** Run a mutation, surface errors, then refresh the account list. */
   const mutate = async (op: () => Promise<unknown>): Promise<void> => {
@@ -33,7 +30,7 @@ export const useAdminStore = create<AdminState>((set, get) => {
       await op();
       await get().refresh();
     } catch (error) {
-      set({ error: messageOf(error) });
+      set({ error: error instanceof Error ? error.message : 'Request failed.' });
     } finally {
       set({ busy: false });
     }

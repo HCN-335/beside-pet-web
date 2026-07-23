@@ -1,6 +1,6 @@
 /**
  * lib/api/http.ts — real backend client.
- * Implements the same Api port as the mock, talking to beside-pet-api over the
+ * Implements the Api port against beside-pet-api over the
  * shared transport (lib/http): base URL, cookie credentials, and error
  * extraction live there. What stays here is this port's own concern — routes,
  * and validating each SSE frame into a StreamEvent at the boundary.
@@ -17,17 +17,19 @@ import type {
   TurnResult,
 } from './types';
 
+/** JSON.parse returns `any`; this alias pins the boundary to a checkable shape. */
+const parseJson: (text: string) => object | null = JSON.parse;
+
+const isStreamEvent = (value: object): value is StreamEvent =>
+  'kind' in value && (value.kind === 'meta' || value.kind === 'token' || value.kind === 'done');
+
 /** Parses one SSE frame payload into a StreamEvent (validated at this boundary). */
 function asStreamEvent(payload: string): StreamEvent | undefined {
-  const parsed: unknown = JSON.parse(payload);
-  if (typeof parsed !== 'object' || parsed === null || !('kind' in parsed)) {
+  const parsed = parseJson(payload);
+  if (parsed === null || !isStreamEvent(parsed)) {
     return undefined;
   }
-  const event = parsed as StreamEvent;
-  if (event.kind === 'meta' || event.kind === 'token' || event.kind === 'done') {
-    return event;
-  }
-  return undefined;
+  return parsed;
 }
 
 /** Yields the turn's events, dropping frames that aren't a known StreamEvent. */

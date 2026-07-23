@@ -1,16 +1,12 @@
 /**
- * lib/api/index.ts — the port selection point.
- * Defaults to the deterministic mock; set NEXT_PUBLIC_USE_BACKEND=1 to talk to
- * the real backend (beside-pet-api) over HTTP/SSE. Components/stores only ever
- * see `api`; they don't know mock vs real.
+ * lib/api/index.ts — the backend port.
+ * The app always talks to the real backend (beside-pet-api) over HTTP/SSE;
+ * there is no offline or mock mode. Components/stores only ever see `api`.
  */
 import { httpApi } from './http';
-import { mockApi } from './mock';
 import type { Api } from './types';
 
-const useBackend = process.env.NEXT_PUBLIC_USE_BACKEND === '1';
-
-export const api: Api = useBackend ? httpApi : mockApi;
+export const api: Api = httpApi;
 
 export type {
   Api,

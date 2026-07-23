@@ -4,7 +4,6 @@
 #
 # NEXT_PUBLIC_* values are INLINED AT BUILD TIME by Next, so they arrive as build
 # args, not runtime env:
-#   --build-arg NEXT_PUBLIC_USE_BACKEND=1
 #   --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 # An empty NEXT_PUBLIC_API_BASE_URL means same-origin relative requests — the
 # right setting when one domain routes /v1/* to the API in front of both apps.
@@ -17,9 +16,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-ARG NEXT_PUBLIC_USE_BACKEND=1
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
-ENV NEXT_PUBLIC_USE_BACKEND=$NEXT_PUBLIC_USE_BACKEND
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
 COPY . .

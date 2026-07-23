@@ -28,9 +28,6 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-const messageOf = (error: unknown): string =>
-  error instanceof Error ? error.message : 'Request failed.';
-
 export const useAuthStore = create<AuthState>((set) => ({
   principal: undefined,
   ready: false,
@@ -64,7 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const principal = await api.me();
       set({ principal });
     } catch (error) {
-      set({ error: messageOf(error) });
+      set({ error: error instanceof Error ? error.message : 'Request failed.' });
     } finally {
       set({ busy: false });
     }
@@ -76,7 +73,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await api.register(username, password, company);
       set({ registered: true });
     } catch (error) {
-      set({ error: messageOf(error) });
+      set({ error: error instanceof Error ? error.message : 'Request failed.' });
     } finally {
       set({ busy: false });
     }
@@ -93,7 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const principal = await api.me();
       set({ principal, setupRequired: false });
     } catch (error) {
-      set({ error: messageOf(error) });
+      set({ error: error instanceof Error ? error.message : 'Request failed.' });
     } finally {
       set({ busy: false });
     }
@@ -104,7 +101,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const principal = await api.updateChatLanguage(language);
       set({ principal });
     } catch (error) {
-      set({ error: messageOf(error) });
+      set({ error: error instanceof Error ? error.message : 'Request failed.' });
     }
   },
 

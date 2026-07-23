@@ -1,6 +1,6 @@
 /**
  * lib/api/types.ts — the backend contract (the single port interface).
- * The frontend only knows these methods; the implementation swaps from mock
+ * The frontend only knows these methods; every implementation detail of the
  * (now) to the real backend later. Absence is expressed with `undefined` only
  * (no `null`); any `null` from JSON/DB is converted at this boundary.
  *
@@ -134,7 +134,7 @@ export interface SessionListItem {
   reportAvailable: boolean;
 }
 
-/** The single data-layer abstraction. mock/real implement this interface.
+/** The single data-layer abstraction the http adapter implements.
  * The reply language is carried by griefProfile.preferredLanguage (single source),
  * so per-turn calls don't take a locale. */
 export interface Api {

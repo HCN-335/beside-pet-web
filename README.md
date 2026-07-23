@@ -60,7 +60,7 @@ frontend/
 │  └─ <feature>/{components, *.store.ts, *.types.ts}
 ├─ components/chat/      # 온보딩·세션 공용 채팅 UI (말풍선·리스트·컴포저)
 ├─ lib/
-│  ├─ api/               # 유일한 백엔드 포트 (mock ↔ http 스위칭)
+│  ├─ api/               # 유일한 백엔드 포트 (http 단일 구현)
 │  ├─ http/              # 공용 HTTP 클라이언트 (base URL·쿠키·에러를 한 곳에서)
 │  ├─ data/              # 읽기 게이트웨이 (store는 여기만 호출)
 │  ├─ cache/             # 타입드 TTL 캐시 팩토리
@@ -72,12 +72,11 @@ frontend/
 
 ## 백엔드 연동
 
-`lib/api`가 유일한 창구 — 환경변수로 mock ↔ 실서버를 스위칭하므로 백엔드 없이도 전체 플로우가 돈다.
+`lib/api`가 유일한 창구다. 앱은 항상 실백엔드와 통신한다 — 오프라인·목업 모드는 두지 않는다(웹앱이므로 대비할 이유가 없고, 목업 데이터가 공개 코드에 남는 것을 원치 않는다).
 
 ```bash
 pnpm install
-pnpm dev                          # mock 모드 — 백엔드 없이 동작
-# .env.local: NEXT_PUBLIC_USE_BACKEND=1 → beside-pet-api 실연동 (JWT httpOnly 쿠키)
+pnpm dev                          # http://localhost:3001 — beside-pet-api(:3000)가 떠 있어야 한다
 ```
 
 ## 톤·접근성 (제품 제약)
@@ -97,7 +96,7 @@ pnpm dev                          # mock 모드 — 백엔드 없이 동작
 - [x] 채팅에서 나가기·대화 마치기 — 둘 다 목록으로 복귀
 - [x] 설정 페이지 (대화 언어 · 앱 언어 · 로그아웃) · 위기 자원 안내
 - [x] admin 콘솔 — 발급 · 신청 승인 · 정지 · 만료 · 복구 (i18n 포함)
-- [x] mock ↔ 실서버 이중 포트 (`lib/api`) + 공용 HTTP 클라이언트 · 데이터 게이트웨이 · TTL 캐시
+- [x] 단일 백엔드 포트 (`lib/api`) + 공용 HTTP 클라이언트 · 데이터 게이트웨이 · TTL 캐시
 - [x] i18n ko/en — 쿠키 로케일, 서버 첫 페인트 반영, 단계명·리포트 제목까지 클라이언트가 라벨링
 
 ### Phase 2 — 운영 대시보드·품질

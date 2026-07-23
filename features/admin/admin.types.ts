@@ -1,6 +1,6 @@
 /**
  * features/admin/admin.types.ts — admin console types, mirroring the backend AccountView.
- * The admin console talks to the real backend (not the mock session port).
+ * The admin console talks to the backend admin surface.
  * Identity types (Role, Principal) live in features/auth.
  */
 import type { Role } from '@/features/auth/auth.types';

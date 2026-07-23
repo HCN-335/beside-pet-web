@@ -29,7 +29,7 @@ import type {
 } from '@/lib/api';
 import type { ChoiceOption, OnboardingStatus, StepInput } from './onboarding.types';
 
-const SKIP = /건너|패스|나중|넘어|모르겠|skip/i;
+const SKIP = /skip/i;
 
 const PATHS: GriefPath[] = ['afterLoss', 'beforeLoss'];
 const DURATIONS: TogetherRange[] = ['0-3', '4-7', '8-11', '12+'];
