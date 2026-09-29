@@ -111,6 +111,14 @@ pnpm dev                          # http://localhost:3001 — beside-pet-api(:30
 
 > 배포·인프라 계획은 백엔드 저장소(beside-pet-api)의 로드맵에서 통합 관리한다.
 
+## 개발 하네스
+
+- [`AGENTS.md`](AGENTS.md)가 에이전트 공통 진입점입니다. 현재 제약은 [rules](.claude/rules/), 반복 절차는 [skills](.claude/skills/)에 둡니다.
+- [Polydeukes](polydeukes.config.yaml)가 편집 시점과 커밋 변경분에서 코딩 규율을 판정합니다. 새 규율은 먼저 권고로 관측하고, 검증된 경우에만 차단으로 올립니다.
+- [결정 기록](docs/adr/)과 구현 메모(`docs/dev-log/`)는 Markdown이 원본이고, `pnpm docs:search`가 로컬 `docs.db` 인덱스에서 필요한 기록만 찾습니다.
+- [PR 품질 검사](.github/workflows/quality.yml)와 [배포 워크플로](.github/workflows/deploy.yml)는 린트·타입 검사·테스트·빌드를 실행합니다. `main` 배포 전에 같은 검사를 거칩니다.
+- 변경한 동작에는 집중 회귀 테스트를 추가합니다. 현재 안전 키워드 판정과 스트림 표시 완료·취소 동작의 기본 테스트가 있습니다.
+
 ## 스택
 
 Next.js(App Router) · React · TypeScript(strict) · Tailwind v4 · Zustand · Biome · pnpm
